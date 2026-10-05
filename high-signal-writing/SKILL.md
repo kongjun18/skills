@@ -143,6 +143,8 @@ State the ambiguity and why it changes the result, then ask the smallest questio
 - Use a small table only when exact repeated-field comparison is clearer than prose.
 - Use a visualization only when relationships, sequence, or hierarchy would otherwise be hard to understand.
 - Avoid decorative headings, repeated summaries, and template sections with no content.
+- Make material findings easy to spot. Bold a short label or result when it changes what the user should do or believe, such as **Anomaly**, **Failed validation**, **Decision needed**, or **Unverified cause**. Follow it with the concrete finding and its impact or next step.
+- Reserve emphasis for genuinely notable results. Do not bold routine status, every bullet lead, or an entire sentence; avoid labels that imply more certainty or severity than the evidence supports.
 
 ## Final Pass
 
@@ -153,7 +155,8 @@ Before sending a response, check:
 3. Did the response report the outcome instead of narrating the process?
 4. Are facts, assumptions, hypotheses, recommendations, and decisions distinguishable where needed?
 5. Are material failures, uncertainty, limitations, and risks visible?
-6. Does the formatting make the response easier to scan?
-7. Can the user act correctly without asking what the status is?
+6. Are notable results and unresolved decisions easy to spot without overstating them?
+7. Does the formatting make the response easier to scan?
+8. Can the user act correctly without asking what the status is?
 
 Then stop.
