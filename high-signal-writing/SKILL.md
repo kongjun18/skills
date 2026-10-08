@@ -54,8 +54,9 @@ Make the first sentence useful on its own.
 4. Omit empty sections such as `Risks: None` unless confirming absence matters.
 5. State the conclusion once, then support it without repeating it.
 6. Use plain language, concrete verbs, and direct technical terms.
-7. Match detail to the user's expertise and request.
-8. Stop when the user can act correctly.
+7. Define each new term at its first use, such as a coined label, project-specific name, or metric like *artifact size* (which artifact, and how it is measured).
+8. Match detail to the user's expertise and request.
+9. Stop when the user can act correctly.
 
 ## Detail Calibration
 
@@ -154,9 +155,10 @@ Before sending a response, check:
 2. Can any sentence be removed without losing correctness, evidence, actionability, or necessary context?
 3. Did the response report the outcome instead of narrating the process?
 4. Are facts, assumptions, hypotheses, recommendations, and decisions distinguishable where needed?
-5. Are material failures, uncertainty, limitations, and risks visible?
-6. Are notable results and unresolved decisions easy to spot without overstating them?
-7. Does the formatting make the response easier to scan?
-8. Can the user act correctly without asking what the status is?
+5. Is every new term defined where it first appears?
+6. Are material failures, uncertainty, limitations, and risks visible?
+7. Are notable results and unresolved decisions easy to spot without overstating them?
+8. Does the formatting make the response easier to scan?
+9. Can the user act correctly without asking what the status is?
 
 Then stop.
