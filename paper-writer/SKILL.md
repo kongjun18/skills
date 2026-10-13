@@ -90,7 +90,10 @@ For Related Work, read [Related Work](references/related-work.md). Its
 stage 1 builds a positioning map instead of a sentence-role outline.
 For an evaluation, plan the chain from claim to question to figure with the
 `systems-evaluation-planner` skill when the figure set is not settled. The
-outline then records each figure's role.
+outline then records each figure's role. For outlining, writing, or reviewing
+evaluation text, read [Evaluation Writing](references/evaluation-writing.md)
+for result paragraph roles, experiment-specific narratives, causal evidence,
+and quantitative reporting. Give this reference to evaluation reviewers too.
 
 ### When the user asks for an outline
 
