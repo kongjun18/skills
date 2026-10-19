@@ -12,6 +12,7 @@
 - `address-pr-comments`: fetch and triage GitHub PR review feedback.
 - `good-agent`: general engineering and research work discipline.
 - `high-signal-writing`: concise, reader-first agent responses.
+- `paper-hygiene`: source and rendered-PDF cleanup for mechanical defects, terminology drift, accidental duplication, float whitespace, and short paragraph tails.
 - `rebase-restack`: recoverable Git rebase and Graphite restack workflow.
 - `repo-memory`: repository-local knowledge and closeout protocol.
 - `systems-evaluation-planner`: systems-paper claim and evaluation planning.
