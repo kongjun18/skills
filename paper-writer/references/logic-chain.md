@@ -38,6 +38,12 @@ fact, definition, or inference the reader does not yet have. Hunt for:
 - **Conflated roles.** Two properties (e.g. a deterministic one and a workload
   one) are blurred into one "together they let us..." sentence, hiding which
   property licenses which conclusion. Split them and map each to what it buys.
+- **Unstated premise.** A sentence relies on a fact the text has not stated
+  yet, such as "if all in-memory copies are lost" before the text says the
+  index lives in memory and is replicated. Check every definite noun phrase
+  ("the X", "these X", "its copies") and every "thus", "therefore", and
+  "however": its antecedent or cause must appear earlier, preferably in the
+  sentence before.
 - **Unmotivated requirement.** A requirement appears without the observation that
   forces it, or a mechanism without the requirement it satisfies.
 - **Abstraction jump.** Workload behavior -> low-level detail with no
@@ -64,6 +70,11 @@ consequence; the first sentence **accepts** it. Classify and check each seam:
   Verify it doesn't silently introduce a new claim.
 - **Enumeration ("first / second / the remaining problem")** — parts of one
   structure. Verify the structure was announced and all parts are delivered.
+
+- **Topic turn inside a paragraph.** When the text turns to a new option
+  (for example, from an in-memory index to an on-SSD one), start a new
+  paragraph whose first sentence links back ("Keeping the index on SSD
+  avoids this rebuild").
 
 Bad transitions to fix: a topic sentence that restates the previous paragraph's
 conclusion (redundant — advance instead), a "thus" with no prior cause, a new

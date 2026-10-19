@@ -12,6 +12,13 @@
 - `address-pr-comments`: fetch and triage GitHub PR review feedback.
 - `good-agent`: general engineering and research work discipline.
 - `high-signal-writing`: concise, reader-first agent responses.
+- `paper-presentation`: orchestrator for paper presentation review, guided paragraph generation, structural revision, and verification; delegates to the review and revise skills.
+- `paper-presentation-review`: read-only presentation review (argument structure, terminology, section responsibility, figures) with located findings.
+- `paper-presentation-revise`: presentation-preserving prose and structure revision that addresses review findings.
+- `paper-integrity`: pre-submission integrity gate, starting with citations (existence, metadata, claim support, omissions, copied text); S0/S1/S2 tiers, offline/fast/full levels chosen at launch, stdlib scripts plus concurrent subagents, results table.
+- `paper-review`: staged systems/database paper-review framework; editorial and citation checks implemented, deeper review stages reserved.
+- `paper-hygiene`: source and rendered-PDF cleanup for mechanical defects, terminology drift, accidental duplication, float whitespace, and short paragraph tails.
+- `paper-writer`: paper prose refinement (refine -> rethink -> refine, logic chain) and outline-first drafting with reviewer subagents.
 - `rebase-restack`: recoverable Git rebase and Graphite restack workflow.
 - `repo-memory`: repository-local knowledge and closeout protocol.
 - `systems-evaluation-planner`: systems-paper claim and evaluation planning.

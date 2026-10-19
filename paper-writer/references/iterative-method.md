@@ -33,8 +33,9 @@ For each paragraph (or tightly-coupled pair):
 3. **Refine (pass 1):** make the paragraph follow
    observation -> requirement -> design choice -> consequence. Introduce notation
    only where it pins an invariant, resource model, or bound. Strip unsupported
-   intensifiers. Ensure every term/symbol/label/citation is introduced before
-   use.
+   intensifiers. Load the terminology/concept ledger and preserve every
+   protected term and concept ID; ensure every term/symbol/label/citation is
+   introduced before use.
 4. **Rethink (the triggers below).** Read it once as the skeptical reviewer.
 5. **Refine (pass 2):** apply the structural fix the rethink exposed — reorder,
    split, re-anchor the topic sentence, demote an observation, promote a
@@ -100,6 +101,8 @@ A paragraph is done when **all** hold:
   `logic-chain.md`).
 - Every term, symbol, label, citation, and figure ref is introduced before use
   and still resolves.
+- Protected terms retain their canonical form or an explicitly allowed form;
+  no near-synonym was introduced to improve fluency or shorten a line.
 - Every sentence gives a reviewer useful information; no minor detail is left
   in for its own sake.
 - No intensifier is doing an evidence's job; no formula is missing

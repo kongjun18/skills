@@ -25,6 +25,7 @@ A task MAY produce no memory changes, but it MUST still run closeout and record 
 8. An agent MUST modify only its current worktree.
 9. Every completed task MUST run a scoped, idempotent memory closeout.
 10. The user MUST be able to review both the repo delta and the memory delta.
+11. One topic MUST have exactly one current note. Correct it in place; never add a note that corrects or supersedes another.
 
 ## Authority
 
@@ -179,7 +180,7 @@ Classify content before writing it:
 - Raw reasoning, temporary plans, command output, and debugging residue: chat, terminal, `/tmp`, or ignored scratch space.
 - Current epic state, focus, blockers, and next steps: `status.md`.
 - Meaningful milestones: `progress.md`.
-- Durable finding, constraint, hypothesis, decision, conflict, or open question: an atomic note.
+- Durable finding, constraint, hypothesis, decision, conflict, or open question: the existing atomic note on that topic, or a new one when no note covers it.
 - Accepted requirement: canonical specification location.
 - Knowledge useful beyond one epic: indexed repo-level knowledge.
 - Navigation and workflow: `AGENTS.md` or an index.
@@ -203,7 +204,7 @@ Each epic has an independent sequence:
 - Different epics MAY each contain `000`, `001`, and the same later IDs.
 - IDs only need to be unique within one epic.
 - Use `<ID>-<short-kebab-title>.md`.
-- Keep one stable topic per note.
+- Keep one stable topic per note. A topic may hold many findings; one finding per note is fragmentation, not atomicity.
 
 Inspect active and archived notes before choosing the next ID.
 
@@ -224,6 +225,8 @@ grep -R "keyword" AGENTS.md CLAUDE.md docs --exclude-dir=archive
 ```
 
 Use search to avoid duplicates, find related specifications and decisions, update an existing topic, detect stale claims, and choose the correct destination. Search archives only when investigating history or regressions.
+
+When the search finds a note on the same topic, update that note. A new note requires that the content be a genuinely different topic, not merely a different task, subtask, session, or occasion.
 
 ### Recommended shape
 
@@ -254,6 +257,53 @@ Do not require frontmatter or a complex schema unless tooling needs it. Human re
 For important claims, preserve enough context to recheck them, such as code paths, tests, configs, migrations, commands, commits, issues, experiments, logs, or explicit user confirmation.
 
 Do not copy large raw logs into notes. Link or summarize the relevant evidence.
+
+### Prefer merging over fragmenting
+
+A complex task with several subtasks is not several topics. Finishing such a task MUST NOT produce one note per subtask sitting flat beside each other.
+
+Default to a single note covering the whole topic, with the subtask results as sections inside it. One note that a reader enters once beats several notes that must be assembled mentally.
+
+Split into separate notes only when a part is long enough to hurt readability, or will be updated on its own schedule independently of the rest. When that happens, the parts belong under an epic directory with an `index.md` that shows the whole shape of the work, not flat siblings.
+
+Choose the container before writing the second note. Do not write flat siblings and plan to organize them later.
+
+If you are already writing a second note on work covered by an existing one, resolve it now rather than deferring: merge into the existing note, or create the epic scaffold and move both inside it.
+
+Consolidation trigger: when two or more notes in one location cover the same topic, merge them into one note, or move them under an epic with an index when the split is justified above. Leaving them flat and cross-linked does not resolve the scatter.
+
+[`scripts/lint_notes.py`](scripts/lint_notes.py) reports the mechanically detectable forms of scatter: notes that only point at other notes, near-duplicate titles in one directory, and flat piles without an index.
+
+```bash
+python3 scripts/lint_notes.py docs
+```
+
+It exits non-zero when it finds something. It cannot tell whether two differently named notes cover the same topic, so a clean run means no obvious scatter, not good structure.
+
+### Correcting a note
+
+Supersession is an edit, not an append.
+
+When new knowledge contradicts or refines an existing note on the same topic, update that note in place: replace the dead claim in `Current View`, and append one line to `Semantic History`.
+
+Do not create a note whose purpose is to correct another note. A correction split across two files scatters one topic and forces every later reader to reconstruct the current truth.
+
+A new note is justified only when the new knowledge is a genuinely different topic that happens to invalidate part of an old one. Even then, edit the old note: remove the dead claim from its `Current View` and link the new note.
+
+Apply this test before every write:
+
+> After this write, can a reader get the current truth on this topic by reading exactly one `Current View`?
+
+If not, the write scatters information. Merge instead.
+
+A `Semantic History` entry is one line by default: what changed, why, and the evidence.
+
+```markdown
+- 2026-09-12: "cache layer is write-back" invalidated — it is write-through
+  (`src/cache.c:220`); earlier measurement came from a branch that never landed.
+```
+
+Preserve the original reasoning at greater length only when the mistake itself is instructive, such as a recurring trap or a reverted change that will otherwise be reattempted.
 
 ## Decisions
 
@@ -290,9 +340,11 @@ When knowledge becomes stale:
 1. classify it correctly;
 2. remove the inactive claim from the current conclusion;
 3. record why it changed and cite evidence;
-4. link the replacement when one exists;
+4. write the replacement claim into the same note; link a separate note only when the replacement is a different topic;
 5. update active files that depended on it;
 6. archive only when it is no longer needed for active navigation.
+
+Staleness is normally handled by editing the note that carries the claim. See [Correcting a note](#correcting-a-note).
 
 Do not silently delete important context. Do not keep contradictory old and new claims together in `Current View` unless they are explicitly marked disputed.
 
@@ -308,6 +360,8 @@ Do not use last-write-wins for semantic conflicts.
 - New knowledge or choice replaced it: mark superseded.
 - Evidence remains inconclusive: mark disputed.
 - Specification differs from implementation: record a conformance conflict.
+
+Every outcome above is recorded by editing the note that already owns the topic, not by adding a note that comments on it.
 
 If resolution requires user or maintainer authority, preserve the conflict and list it in closeout instead of inventing a decision.
 
@@ -363,9 +417,9 @@ Every completed task MUST run this scoped, idempotent pipeline:
 2. **Extract semantic changes:** findings, decisions, invalidations, conflicts, constraints, and questions.
 3. **Classify:** normative or descriptive; verified or unverified; local, epic-wide, or cross-epic.
 4. **Search and reconcile:** update existing knowledge, remove duplication, and expose unresolved conflicts.
-5. **Publish the smallest correct memory delta:** notes, specs, status, progress, and indexes.
+5. **Publish the smallest correct memory delta:** notes, specs, status, progress, and indexes. Most closeouts edit existing notes and add none.
 6. **Compact the touched scope:** remove inactive claims from current views and archive only when appropriate.
-7. **Validate:** structure, links, authority, branch consistency, and stale claims.
+7. **Validate:** structure, links, authority, branch consistency, and stale claims. Run [`scripts/lint_notes.py`](scripts/lint_notes.py) over the touched scope.
 8. **Report:** summarize the repo delta and memory delta separately.
 9. If provided, run `memoryctl closeout` and `memoryctl verify` or equivalent commands.
 
@@ -458,7 +512,7 @@ Enforce observable outcomes, not claims about an agent's private reasoning.
 
 Record durable non-obvious knowledge, accepted requirements and decisions, important constraints, validated findings, useful labeled hypotheses, unresolved material conflicts, current state, and meaningful milestones.
 
-Do not record private reasoning, raw transcripts, noisy debugging output, temporary chatter, trivial local details, unsupported guesses as facts, duplicate current knowledge, or one new note per task.
+Do not record private reasoning, raw transcripts, noisy debugging output, temporary chatter, trivial local details, unsupported guesses as facts, duplicate current knowledge, one new note per task, one new note per subtask, or a note whose purpose is to correct another note.
 
 The goal is the smallest trustworthy memory that prevents rediscovery and misalignment.
 
@@ -469,7 +523,8 @@ The goal is the smallest trustworthy memory that prevents rediscovery and misali
 - [ ]  Intended and observed behavior were kept separate.
 - [ ]  Durable findings were routed to the correct canonical location.
 - [ ]  Facts, hypotheses, proposals, decisions, conflicts, and questions are distinguishable.
-- [ ]  Stale claims were invalidated, expired, or superseded.
+- [ ]  Stale claims were invalidated, expired, or superseded in place.
+- [ ]  Each topic has exactly one `Current View`; corrections edited the existing note rather than adding one.
 - [ ]  Notes remain consistent with the current branch revision.
 - [ ]  Note numbering starts at `000` and is monotonic within each epic.
 - [ ]  `status.md`, `progress.md`, and indexes contain only their intended views.

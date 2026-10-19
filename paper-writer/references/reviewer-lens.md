@@ -62,7 +62,8 @@ to decide which sentences carry weight.
 - **A term is used before it is defined.** The abstract counts too.
 - **Names differ from the body's.** Check baselines, metrics, and
   mechanisms, and watch for near-synonyms such as "snapshot" and
-  "checkpoint".
+  "checkpoint". Treat a canonical term as protected: identify a mismatch and
+  preserve the ledger's form rather than recommending a shorter synonym.
 - **One word means two things.** Fix it so each term names one concept.
 
 ### Consistency

@@ -45,3 +45,7 @@ Use geometric means only when all ratios are positive and benchmark weighting is
 ## Reference Line
 
 Draw a 1.0× reference line. The baseline may appear as a 1.0 series or be omitted, but the caption must name it.
+
+## Ratio Axis
+
+If ratios fall on both sides of 1.0 or span more than about 10×, use a log₂ y-axis with ticks at 0.25×, 0.5×, 1×, 2×, 4×, so wins and losses of equal factor get equal visual distance. Show ratios on a log axis as dots, not bars. On a linear axis, bars may be used only when every ratio is at least 1.0; bars still start at zero.
