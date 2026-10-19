@@ -1,6 +1,6 @@
 ---
 name: systems-paper-plotting
-description: Create publication-quality plots for systems research papers from an evaluation_plan.yaml and local experiment data. Use when Codex needs to render end-to-end comparisons, normalized speedups, performance breakdowns, load-latency curves, CDF/CCDF tail plots, scalability, ablation, sensitivity, resource time-series, tradeoff scatter, or heatmap figures; generate standalone plots, paper combined figures, complete overview figures, captions, processed data, and audit files; or validate that systems-paper figures avoid misleading normalization, statistics, axis, and layout choices.
+description: Create publication-quality plots for systems research papers from an evaluation_plan.yaml and local experiment data. Use when Codex needs to render end-to-end comparisons, normalized speedups, performance breakdowns, load-latency curves, CDF/CCDF tail plots, scalability, ablation, sensitivity, resource time-series, tradeoff scatter, or heatmap figures; generate standalone plots, paper combined figures, complete overview figures, captions, processed data, and audit files; or validate that systems-paper figures avoid misleading normalization, statistics, axis, and layout choices; or iteratively refine rendered paper figures through a reviewer-subagent review → verify → refine loop ("refine figures", "review and fix figures", "polish figure X").
 ---
 
 # Systems Paper Plotting
@@ -35,9 +35,9 @@ This is a guidance skill: it does not ship a renderer. You write the plotting co
 5. **Failures stay visible.** Timeouts, OOMs, crashes, and overload must appear as gaps, markers, warnings, or separate failure evidence.
 6. **Breakdowns must add up.** Use stacked bars only for mutually exclusive additive components.
 7. **Multi-facet figures need three outputs.** Generate standalone plots, paper combined figures, and complete overview figures.
-8. **Readable at final size.** Check paper figures at their physical paper size, not only as enlarged screenshots.
+8. **Readable at final size.** Check paper figures at their physical paper size, not only as enlarged screenshots; no text below 7 pt at print size.
 9. **Captions must be reproducible.** Any quantitative caption claim must be recomputable from processed data.
-10. **Avoid misleading decoration.** No 3D, gradients, dual y-axes, arbitrary truncated bars, or decorative backgrounds.
+10. **Avoid misleading decoration.** No 3D, gradients, dual y-axes, arbitrary truncated bars, bars on log axes, or decorative backgrounds.
 
 Read [Anti-Patterns](references/anti-patterns.md) before choosing an unusual chart form or axis treatment.
 
@@ -49,12 +49,14 @@ Read [Anti-Patterns](references/anti-patterns.md) before choosing an unusual cha
 4. **Render standalone and combined outputs.** For each multi-facet figure, produce per-facet standalone plots, paper combined plots, and complete overview plots.
 5. **Write processed data and audits.** Save the transformed data, normalization formulas, warnings, errors, and output file list.
 6. **Draft captions.** State the research question, data scope, metric direction, baseline, uncertainty, repetitions, and reproducible quantitative result.
-7. **Review final-size readability.** Check labels, legends, panel count, and whether the layout still supports the intended claim.
+7. **Review final-size readability.** Check labels, legends, panel count, and whether the layout still supports the intended claim. For iterative polishing, run the refinement loop below.
 
 ## Visual Style Principles
 
-- Prefer PDF and SVG for papers; also emit 300 DPI PNG for quick review.
-- Use sans-serif fonts and embed fonts where possible.
+- Emit PDF for papers and a 300 DPI PNG for quick review; add SVG only when a non-LaTeX consumer needs it.
+- Embed TrueType (Type 42) fonts, never Type 3: set `pdf.fonttype = 42` and `ps.fonttype = 42` (Matplotlib defaults to Type 3, which ACM and USENIX PDF checks flag).
+- Use sans-serif fonts; size text so it is 7–9 pt at print size (set size × print width / figsize width).
+- Label every quantitative axis with its unit, e.g. `Latency (ms)`; scale values into readable units (`Mops/s`, `GB`) instead of Matplotlib offset text such as `1e6`.
 - Remove top and right spines.
 - Keep only light grid lines that help value reading.
 - Use borderless legends.
@@ -62,6 +64,9 @@ Read [Anti-Patterns](references/anti-patterns.md) before choosing an unusual cha
 - Use neutral gray for baselines, a single primary accent for the proposed system, and restrained auxiliary colors for others.
 - Encode important distinctions with markers, line styles, or hatches in addition to color.
 - Keep method order and visual mappings consistent across all standalone and combined figures.
+- Size the canvas to the placed width so LaTeX scales it by 1.00, and do not save with `bbox_inches="tight"`, which changes the canvas width.
+- Place axes in inches (`fig.add_axes`) with fixed margins, panel gaps, and one band for a shared legend, so rearranging panels keeps them equal in size and text unscaled.
+- Check annotations and guide-line labels against the curves at print size, and render a grayscale copy to confirm every series stays distinguishable.
 
 See [Visual Style Principles](references/visual-style-principles.md).
 
@@ -82,6 +87,7 @@ See [Visual Style Principles](references/visual-style-principles.md).
 - Lower is better: `baseline / system`.
 - Draw a 1.0× reference line.
 - Name the baseline.
+- When ratios fall on both sides of 1.0 or span more than about 10×, use a log₂ y-axis so 0.5× and 2× sit equally far from 1.0, and show ratios as dots, not bars.
 - With paired repetitions, compute ratios per run before summarizing; without pairing, use ratio of estimates and warn in the audit.
 - Geometric means across benchmarks may summarize but must not replace per-benchmark results.
 
@@ -106,6 +112,8 @@ See [Performance Breakdown](references/performance-breakdown.md).
 - Draw SLO reference lines when applicable and report the maximum stable load satisfying the SLO.
 - Mark saturation using an explicit criterion, not visual intuition.
 - Do not connect failed, OOM, or timed-out points as zero; use gaps or explicit symbols.
+- With achieved throughput on x, connect points in offered-load order and mark post-saturation points, since the curve can fold back.
+- Use a log latency axis when tails grow by orders of magnitude near saturation.
 
 See [Load Latency And Tail Latency](references/load-latency-and-tail-latency.md).
 
@@ -128,6 +136,14 @@ See [Distribution Plots](references/distribution-plots.md).
 - Do not call multi-factor configuration changes ablations.
 
 See [Scalability Ablation Sensitivity](references/scalability-ablation-sensitivity.md).
+
+### Resource Time-Series, Tradeoff Scatter, And Heatmap
+
+- Time-series: state the sampling interval and any smoothing window; mark or exclude warm-up; annotate injected events (failures, compaction, reconfiguration) at their timestamps.
+- Tradeoff scatter: mark the "better" corner or arrow on the axes; draw the Pareto frontier only over measured points.
+- Heatmap: use a perceptually uniform sequential colormap, or a diverging one centered at 1.0 for ratios; always include a colorbar with units; annotate cell values when the grid is small.
+
+See [Time-Series Scatter Heatmap](references/timeseries-scatter-heatmap.md).
 
 ## Standalone And Combined Figures
 
@@ -167,8 +183,8 @@ See [Statistics And Error](references/statistics-and-error.md).
 
 Supported profiles:
 
-- `paper-single`: approximately 3.35 inches wide;
-- `paper-double`: approximately 7.0 inches wide;
+- `paper-single`: approximately 3.33 inches wide (`\columnwidth` in the USENIX and acmart templates);
+- `paper-double`: approximately 7.0 inches wide (`\textwidth`);
 - `presentation`: widescreen, larger text, fewer secondary annotations.
 
 Presentation variants must not change data filtering, normalization formula, baseline, method order, statistical policy, or conclusions.
@@ -181,8 +197,10 @@ Hold every figure to the same discipline:
 
 - Read raw data directly; never fabricate, interpolate, or zero-fill missing values.
 - Keep the transform auditable: filter to successful rows, compute the center and error explicitly, and save the transformed table used to draw the figure.
-- Emit each figure as PDF and SVG for the paper, plus a 300 DPI PNG for quick review.
+- Emit each figure as PDF (Type 42 fonts) for the paper, plus a 300 DPI PNG for quick review.
 - Write a processed-data table, a caption draft, and an audit note alongside each figure.
+- Print the numbers that the caption and paper text quote, and compare them before handing off.
+- After refactoring a plot script, render the old configuration and confirm it matches the old output pixel for pixel before making any visible change.
 
 A convention that keeps outputs organized:
 
@@ -196,6 +214,12 @@ audits/
 ```
 
 Reuse one style module across all figures so method order, colors, markers, hatches, and component order stay globally consistent (see [Visual Style Principles](references/visual-style-principles.md)).
+
+## Figure Refinement Loop
+
+To polish rendered figures, run a review → verify → refine loop: a fresh reviewer subagent critiques each figure against its paper claim at print size, you verify every finding against the image, script, and data, apply only accepted layout fixes, regenerate, re-check the non-negotiable rules, and repeat. Scope is presentation/layout only; data, panel, metric, chart-type, figsize, and shared-naming changes are escalated to the human, not applied.
+
+Read [Refinement Loop](references/refinement-loop.md) for the phases, verdicts, escalation triggers, and ledger format, and fill [Reviewer Brief](references/reviewer-brief.md) as the reviewer's prompt.
 
 ## Caption Drafts
 
@@ -221,9 +245,10 @@ Each audit must check at least:
 - normalized baseline equals 1 where applicable;
 - performance-breakdown component sums;
 - log axes contain no non-positive values;
+- PDF fonts are embedded and none are Type 3 (`pdffonts <file>.pdf`);
 - missing values are not filled as zero;
 - standalone and combined figures are complete;
-- PDF, SVG, and PNG outputs exist;
+- PDF and PNG outputs exist (SVG when requested);
 - caption numbers can be recomputed from processed data.
 
 See [Captions And Audits](references/captions-and-audits.md).
@@ -238,6 +263,6 @@ Deliver only when:
 - absolute and normalized views are separate;
 - performance breakdown additivity passes or the figure type changes;
 - error-bar semantics are explicit;
-- PDF, SVG, PNG, processed data, captions, and audits are complete;
-- visuals contain no 3D effects, gradients, dual y-axes, misleading truncation, or decorative noise;
+- PDF, PNG, processed data, captions, and audits are complete;
+- visuals contain no 3D effects, gradients, dual y-axes, bars on log axes, misleading truncation, Type 3 fonts, or decorative noise;
 - audits have no errors and warnings are explained.

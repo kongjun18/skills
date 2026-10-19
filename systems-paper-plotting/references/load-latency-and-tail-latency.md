@@ -16,6 +16,10 @@ If the paper uses an SLO, draw a horizontal reference line and report the maximu
 
 Do not connect failed, timed-out, or OOM points to zero. Use gaps, explicit markers, or a separate failure-rate plot.
 
+## Throughput-Latency Curves
+
+With achieved throughput on x, past saturation the achieved throughput can drop while latency keeps rising, so the curve folds back. Connect points in offered-load order, never sorted by x, and mark post-saturation points with a distinct marker. Use a log latency axis when tail latency grows by orders of magnitude near saturation.
+
 ## Tail Claims
 
 Tail claims require quantile or distribution evidence at comparable load. A single average latency curve cannot support low-tail-latency claims.
