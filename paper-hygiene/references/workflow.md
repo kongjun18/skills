@@ -63,13 +63,15 @@ not evidence that two terms are interchangeable. Mark a change as safe only
 when the local referent is the same object and the canonical term is already
 established.
 
-### Artifact map
+### Artifact and float map
 
-| ID | Kind | Label | Source | Page(s) | Caption | Referenced from | Order |
-| --- | --- | --- | --- | --- | --- | --- | --- |
+| ID | Kind | Label | Source | First use | Owner section/subsection | Rendered page(s) | Panel/caption status | Order |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 
 Use it to verify that a local label fix did not change a figure/table/equation
-identity and that a layout fix did not reorder floats.
+identity and that a layout fix did not reorder floats. Record the source
+environment's placement option and the neighboring heading or paragraph for
+every float.
 
 ## Issue record
 
@@ -109,6 +111,40 @@ Treat comments, TODOs, draft markers, duplicate labels, and accidentally
 uncommented archival text as artifacts only when their status is clear from the
 source. A comment that contains an author decision is not disposable evidence.
 
+## Figure and table placement audit
+
+Run this as its own `floats` unit. For each artifact, compare source order,
+first textual use, owning section/subsection, and rendered page order. Inspect
+the final-size render for clipped panel titles, cropped axes, hidden legends,
+detached captions, and table headers that fall outside the page or box.
+
+The following are placement defects that can receive local repairs when the
+paper's existing float policy makes the intended location clear:
+
+- a float appears before the paragraph that introduces it without an explicit
+  figure-led design;
+- a float splits a paragraph or sits between a subsection heading and its
+  opening paragraph;
+- a float owned by one subsection crosses into the next subsection or appears
+  under an unrelated heading;
+- a figure is pushed beyond the page containing its introducing result even
+  though a top/bottom placement or a boundary move would keep the relationship;
+  or
+- a panel title is clipped because of the image bounding box, `trim`/`clip`, a
+  subcaption width, or a page edge.
+
+Repair the smallest local cause: use a permitted `[t]`, `[b]`, or `[tbp]`
+option, move the environment to a paragraph boundary, repair the panel box, or
+add a local `\FloatBarrier` at a genuine section boundary. Use `\afterpage`
+or `\clearpage` only when the template already permits them and lighter
+repairs fail. Do not use global `[H]` placement or shrink a figure below
+readable print size to conceal clipping.
+
+Before accepting a repair, render the affected page and its neighbors. Confirm
+that the float remains attached to its caption, the opening paragraph is not
+stranded, the next heading is not left alone, source and rendered order are
+accounted for, and no new overfull box or large blank region appears.
+
 ## Rendered whitespace audit
 
 Inspect the baseline page and the corresponding final page together. Mark the
@@ -135,11 +171,21 @@ line visually. Count words after removing only layout whitespace; do not count
 equation tokens or a citation-only marker as prose words.
 
 Safe candidates usually include a repeated adjective, an optional discourse
-adverb, or a redundant phrase already stated in the same sentence. Do not
-delete a qualifier (only, at least, up to), condition, metric/unit, technical
-noun, citation, or causal connector merely to gain a line. If the candidate
-requires moving a sentence, changing paragraph boundaries, or rewriting a
-transition, defer it.
+adverb, or a redundant phrase already stated in the same sentence. Prefer
+deletion-only edits. A replacement is allowed only when every replacement token
+already occurs in the same sentence or the canonical terminology ledger, and
+the sentence contract keeps exactly the same objects, relations, scope,
+qualifiers, modality, tense, evidence bindings, and terminology IDs. Never
+introduce a new compound, nominalization, abbreviation, synonym, or technical
+term while shortening. For example, changing `tokens matched by exact
+matching` to `exact-match token` is prohibited because it creates a new term
+and changes the visible concept form.
+
+Do not delete a qualifier (only, at least, up to), condition, metric/unit,
+technical noun, citation, or causal connector merely to gain a line. If the
+candidate requires moving a sentence, changing paragraph boundaries, or
+rewriting a transition, defer it. If exact semantic correspondence cannot be
+verified, retain the original sentence and report the tail to the user.
 
 ## Final gate
 
@@ -152,6 +198,7 @@ The pass is complete only when all of these are true:
   unchanged;
 - the final PDF has no new unresolved references, overfull boxes, clipping,
   collisions, or detached captions;
-- each accepted tail change is visible in the final render; and
+- each accepted tail change is visible in the final render and has an exact
+  before/after sentence-contract match; and
 - every unresolved case is listed with a reason and the workflow that should
   handle it next.

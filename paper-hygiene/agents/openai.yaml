@@ -1,4 +1,4 @@
 interface:
   display_name: "Paper Hygiene"
   short_description: "Clean paper source and rendered PDF safely"
-  default_prompt: "Use $paper-hygiene to audit and safely clean this paper source and rendered PDF."
+  default_prompt: "Use $paper-hygiene to run an independent paper hygiene check, including figure and table placement, on this source and rendered PDF."
