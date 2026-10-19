@@ -14,24 +14,11 @@ Keep the artifacts in ignored scratch space, one file per round: the outline
 rounds, the extracted chains, and the verdicts. If the project keeps shared
 outlines, the final outline goes there.
 
-## Phase filter
+## Phase
 
-Read the `Phase: Early`, `Phase: Draft`, or `Phase: Submission` line in the
-section outline before every round. Run all three stages, but apply the phase
-filter to the review:
-
-- **Early** reviews focus on claims, roles, the logic chain, evidence, and
-  cross-section contradictions. Budget, wording, layout, figure style, and
-  final-number checks go in a short `Later` list.
-- **Draft** reviews focus on prose following the agreed outline, scoped claims,
-  definitions, and transitions. A gross page overrun is a low-priority
-  `Later` item; detailed layout work waits.
-- **Submission** reviews focus on budget, layout, figure size, simplification,
-  consistency, citations, and final numbers. Restructuring is deferred unless
-  a logic defect blocks the checks.
-
-Items in `Later` are never high priority and do not justify another round.
-If the outline has no phase line, ask the author before reviewing.
+Read the section outline's phase line before every round, and apply the
+phase rules in "Phase controls the review" in the skill. The stage sections
+below say only what each phase changes in that stage.
 
 ## Stage 1. Outline: roles only
 
@@ -55,7 +42,7 @@ none.
 that first cites it. It gives the float's role, not its drawing:
 
 ```
-FIG:<label> [result | explanation] answers: <the reviewer question>
+FIG:<label> [role] answers: <the reviewer question>
 - takeaway: <the one conclusion a reader should draw from it>
 - shows: <the designs, workloads, and metrics compared; the panels, if several>
 - explains: <for an explanation figure only: the result it decomposes, and
@@ -65,7 +52,19 @@ FIG:<label> [result | explanation] answers: <the reviewer question>
 - needs: <its data source, or "missing experiment">
 ```
 
-Use `TAB:` for a table.
+Use `TAB:` for a table, with `why a table:` (why a sentence cannot carry
+it) in place of `why a figure:`.
+
+The roles are open: name what the float does for the argument. Common roles:
+- **result**: the measured answer to an evaluation question;
+- **explanation**: why a result holds, shown as its parts;
+- **motivation**: a measurement that shows the problem is real;
+- **overview**: the whole design in one diagram;
+- **mechanism**: how one step works, often as a worked example;
+- **example**: a concrete instance that makes a definition clear;
+- **tradeoff**: what one design gains against what it gives up;
+- **setup**: the configuration or workloads, usually a table;
+- **positioning**: prior work compared on the paper's axes, usually a table.
 
 **The rest of the outline:**
 - for a section with subsections, a section-level outline first: the

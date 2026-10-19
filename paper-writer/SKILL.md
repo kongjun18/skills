@@ -34,8 +34,9 @@ shorter line is not evidence of equivalence.
 Before outlining, drafting, refining, simplifying, or accepting a reviewer
 rewrite:
 
-1. Load the project writing guide and author decisions, then build or refresh a
-   terminology/concept ledger. For every protected item record a stable concept
+1. Load the project writing guide, the paper's
+   [glossary](../paper-presentation-review/references/glossary.md), and author decisions,
+   then build or refresh a terminology/concept ledger seeded from the glossary. For every protected item record a stable concept
    ID, the canonical surface form, its definition and referent, its layer and
    scope, explicitly allowed grammatical forms or aliases, forbidden or
    suspicious variants, and the source that establishes the choice. If a
@@ -89,28 +90,6 @@ Every piece of text goes through three stages. Each stage runs the same loop:
 > done or **every high-priority issue is fixed**, whichever comes first. Then
 > move to the next stage.
 
-### Phase controls the review
-
-Every section outline records one current phase: `Early`, `Draft`, or
-`Submission`. Read that line before producing or reviewing any stage. The
-phase changes the review priority; it does not remove a stage.
-
-- **Early:** prioritize the claim, the paragraph and figure roles, the logic
-  chain, available or explicitly missing evidence, and contradictions across
-  sections. Treat wording, length, page budget, layout, figure style, and final
-  numbers as later work.
-- **Draft:** prioritize prose that follows the agreed outline, scoped claims
-  with their number and source, defined terms, and transitions. Treat page
-  budget and layout as later work, except flag a gross overrun as low priority.
-- **Submission:** prioritize page budget, layout, figure size, simplification,
-  consistency, citations, and final numbers. Defer restructuring unless a
-  logic defect blocks the submission checks.
-
-Put at most a short `Later` list at the end of a review for findings outside
-the current phase. Such findings are never high priority and never justify
-another round. Do not infer a phase from the prose. If the outline has no
-phase line, ask the author before reviewing.
-
 1. **Outline.** Assign roles only, with no wording:
    - each paragraph gets its role and the reviewer question it answers;
    - each sentence gets its role and the evidence it needs, if any;
@@ -146,6 +125,32 @@ evaluation text, read [Evaluation Writing](references/evaluation-writing.md)
 for result paragraph roles, experiment-specific narratives, causal evidence,
 and quantitative reporting. Give this reference to evaluation reviewers too.
 
+### Phase controls the review
+
+Every section outline records one current phase, `Early`, `Draft`, or
+`Submission`, in a phase line near its top (the project skill gives the
+format). Read that line before producing or reviewing any stage. The phase
+changes the review priority; it does not remove a stage. This section is the
+only definition of the phases; the stage sections of
+[Three-Stage Loop](references/three-stage-loop.md) say what each phase
+changes in that stage.
+
+- **Early:** prioritize the claim, the paragraph and figure roles, the logic
+  chain, available or explicitly missing evidence, and contradictions across
+  sections. Treat wording, length, page budget, layout, figure style, and final
+  numbers as later work.
+- **Draft:** prioritize prose that follows the agreed outline, scoped claims
+  with their number and source, defined terms, and transitions. Treat page
+  budget and layout as later work, except flag a gross overrun as low priority.
+- **Submission:** prioritize page budget, layout, figure size, simplification,
+  consistency, citations, and final numbers. Defer restructuring unless a
+  logic defect blocks the submission checks.
+
+Put at most a short `Later` list at the end of a review for findings outside
+the current phase. Such findings are never high priority and never justify
+another round. Do not infer a phase from the prose. If the outline has no
+phase line, ask the author before reviewing.
+
 ### When the user asks for an outline
 
 Stop after stage 1. The outline, with its figure and table roles, is the
@@ -175,8 +180,8 @@ the user approves:
 1. **Rules.** The repository's writing guide and the user's style rules. A
    project skill that extends this one names them.
 2. **Terminology lock.** Build or refresh the terminology/concept ledger from
-   the writing guide, author decisions, and the manuscript before proposing
-   wording. No ledger means no protected-term replacement; extract the
+   the glossary, writing guide, author decisions, and the manuscript before
+   proposing wording. Never write a glossary-banned term. No ledger means no protected-term replacement; extract the
    established terms or ask the author when the referent is unclear.
 3. **The manuscript.** All of it for an abstract or introduction. Otherwise,
    the target plus at least one paragraph before and one after.
@@ -209,17 +214,18 @@ the user approves:
 
 - **Brief.** Run reviewers at high effort and read-only. Give each one:
   - its role, a program-committee member of the venue;
-  - the target outline's current phase and the phase filter from
-    `references/three-stage-loop.md`;
+  - the target outline's current phase, and the "Phase controls the review"
+    rules of this skill;
   - this skill (`~/.claude/skills/paper-writer/SKILL.md` and
     `references/reviewer-lens.md`) and the project skill, read from disk at
     the start, so it reviews against their latest version;
   - the files to read first;
   - the author constraints it must not argue against;
-  - the terminology/concept ledger and an explicit instruction not to propose
-    unapproved near-synonyms for protected terms;
+  - the paper's glossary path, to read from disk, and the terminology/concept
+    ledger, with an explicit instruction not to propose unapproved
+    near-synonyms for protected terms or any glossary-banned term;
   - the stage's report format, with a word limit.
-  - **Who reviews.** Keep one reviewer for all rounds of a stage, continuing
+- **Who reviews.** Keep one reviewer for all rounds of a stage, continuing
   the same agent. Use a fresh reviewer at the start of each stage, so the
   stage 2 read is cold.
 - **Verify every finding** in the manuscript, data, or code before applying
@@ -272,7 +278,7 @@ the user approves:
   space, and never commit them.
 - **Report:**
   - where the text is;
-  - its length against the budget;
+  - its length against the budget, in Draft and Submission;
   - the final logic chain;
   - the reviewer's verdict;
   - the placeholders;
