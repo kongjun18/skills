@@ -256,7 +256,10 @@ the user approves:
 
 ## Verification and handoff
 - **Checks.** Run `git diff --check`. Scan mechanically for the user's style
-  rules. Confirm that every label, citation, and figure reference resolves.
+  rules and run the fatal placeholder blocker scan (for example `TODO`, `XX`,
+  `???`, and unfinished fill-ins) across source and rendered output. Confirm
+  that no confirmed or ambiguous candidate remains, and that every label,
+  citation, and figure reference resolves.
   Check new bibliography entries through `https://doi.org/<doi>` with
   `Accept: application/x-bibtex`.
 - **Build.** Build the PDF when length or layout matters. Report the errors,

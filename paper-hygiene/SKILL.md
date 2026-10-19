@@ -1,6 +1,6 @@
 ---
 name: paper-hygiene
-description: Independently audit and safely clean an academic paper's source and rendered PDF for mechanical errors, accidental duplication, terminology drift, section artifacts, figure/table clipping or placement errors, float whitespace, and very short final lines. Apply only meaning-preserving local fixes, with canonical technical terms and concept identities protected from unapproved synonym replacement; route argument, section-responsibility, and presentation-structure decisions to a presentation review or revision skill.
+description: Independently audit and safely clean an academic paper's source and rendered PDF for fatal submission blockers, mechanical errors, accidental duplication, terminology drift, section artifacts, figure/table clipping or placement errors, float whitespace, and very short final lines. Apply only meaning-preserving local fixes, with canonical technical terms and concept identities protected from unapproved synonym replacement; route argument, section-responsibility, and presentation-structure decisions to a presentation review or revision skill.
 ---
 
 # Paper Hygiene
@@ -12,6 +12,39 @@ that says the same thing, uses the same objects and evidence consistently, and
 renders without avoidable whitespace, float placement defects, or mechanical
 errors. Every check below is an independently executable unit; running one
 unit does not imply that the others ran.
+
+## Fatal preflight: unresolved submission blockers
+
+This is a release gate, not a cosmetic cleanup unit. Every invocation of this
+skill begins with the `blockers` preflight, even when the user selects another
+unit. The preflight scans the complete source scope and the rendered PDF for
+unresolved placeholders and draft residue. A confirmed blocker stops the run's
+editing work and produces `Needs revision` until it is removed or the author
+explicitly classifies it as intentional.
+
+Scan case-insensitively for standalone or macro forms of markers such as
+`TODO`, `FIXME`, `TBD`, `TBC`, `XXX`, `XX`, `???`, `PLACEHOLDER`, `REPLACE`,
+`INSERT`, `\todo{}`, `\TODO{}`, `\fixme{}`, `\placeholder{}`, angle-bracket
+fill-ins such as `<value>` or `<author>`, and project-language equivalents such
+as `待补`, `待定`, or `占位`. Also inspect visible draft notes, red review text,
+unfinished citations, and blank result fields that use a marker rather than a
+value. Use token boundaries and surrounding context so an intentional term
+such as `xxHash` is not reported as the `XX` marker; do not silently discard an
+ambiguous match.
+
+The preflight must record every candidate's source location, rendered location
+when visible, exact marker, surrounding text, and classification:
+
+- **confirmed blocker:** unresolved text that cannot ship;
+- **intentional content:** a marker shown as part of a documented example or
+  notation, with the evidence recorded;
+- **ambiguous:** requires author clarification and remains blocking until
+  resolved.
+
+Do not invent values, citations, names, or results to clear a blocker. A local
+deletion is allowed only when the marker is demonstrably accidental and its
+removal does not leave a missing claim or broken sentence. Otherwise stop and
+report the blocker. This preflight is mandatory before any PDF handoff.
 
 ## Priority zero: protected terminology and concept inventory
 
@@ -67,6 +100,7 @@ true:
    meaning, concept inventory, protected-token sequence, concept ID, or
    canonical terminology.
 4. The change can be checked again after recompilation.
+5. The mandatory `blockers` preflight has no confirmed or ambiguous candidate.
 
 Otherwise record a located finding and stop at `Needs context`. In particular,
 do not invent a missing section, rewrite a section for better flow, merge two
@@ -79,7 +113,7 @@ from memory. Those are presentation or semantic decisions.
 | --- | --- | --- |
 | Mechanics | Grammar, spelling, punctuation, agreement, articles, malformed local sentences, and an unambiguous word-choice slip outside protected terminology | A rewrite that changes emphasis, claim strength, or technical meaning |
 | Repetition | Exact duplicate text, or a clearly accidental semantic duplicate with the same role and evidence | Two passages that share a topic but have different scope, role, or evidence |
-| Sections | Duplicate/empty headings, orphaned `\input`/`\include`, broken local numbering or cross-reference, and visible TODO residue | A conceptually missing section, a section move, or a new subsection whose responsibility is not specified |
+| Sections | Duplicate/empty headings, orphaned `\input`/`\include`, and broken local numbering or cross-reference | A conceptually missing section, a section move, or a new subsection whose responsibility is not specified |
 | Terminology | Normalize only an explicitly allowed alias to the ledger's canonical term when the concept ID is the same | A near-synonym or a choice between distinct objects, layers, states, or operations |
 | References and labels | Broken local references, mismatched figure/table/equation labels, unresolved keys, and stale local names | A citation or attribution whose correctness needs external or scientific judgment |
 | Figures and tables | Clipped panel titles, missing labels, detached captions, wrong source order, a float before its first use, or a float that interrupts a paragraph or appears under the wrong subsection heading | A placement change that requires reordering the argument, changing a figure/table's role, or inventing a new visual |
@@ -100,6 +134,8 @@ edits.
 
 - `mechanics`: grammar, spelling, punctuation, agreement, and unambiguous
   local word-choice errors.
+- `blockers`: mandatory fatal preflight for unresolved placeholders, draft
+  markers, unfinished fields, and visible review residue.
 - `duplicates`: exact or clearly accidental semantic duplicate paragraphs.
 - `structure`: duplicate/empty headings, missing source inclusions, visible
   section artifacts, and broken local heading/label structure.
@@ -118,7 +154,8 @@ edits.
 - `auto`: run all units in a fixed sequence. Use this only when the user asks
   for the complete hygiene pass.
 
-If the user names one unit, run only that unit. `cleanup` may be accepted as a
+If the user names one unit, run the mandatory `blockers` preflight first, then
+run only that unit. `cleanup` may be accepted as a
 compatibility alias for the explicitly named source units, but it must not
 silently include `floats`, `whitespace`, or `tails`.
 
@@ -129,15 +166,35 @@ PDF hash, build command, requested scope, and unit name. Rebuild or validate a
 baseline before making edits, even if another unit was run earlier. Apply only
 the selected unit's edits. Then run that unit's verification gate and report
 unrelated findings as deferred observations rather than fixing them in the
-same run.
+same run. The run record must include the `blockers` preflight and its
+candidate classifications; a unit cannot be reported `Complete` while that
+preflight is unresolved.
 
 ## Pipeline
 
-The intake and verification gates apply to every independent mode. In `auto`,
-run the units in this order: `mechanics`, `duplicates`, `structure`,
+The intake and verification gates apply to every independent mode. Run
+`blockers` first for every mode. In `auto`, run the units in this order:
+`blockers`, `mechanics`, `duplicates`, `structure`,
 `terminology`, `references`, `floats`, `whitespace`, and `tails`. In a
 single-unit run, execute only the corresponding subsection below and omit
 changes from every other unit.
+
+### 0. Mandatory blockers preflight
+
+Before any source edit, scan all included source files, bibliography entries,
+captions, tables, figure text available as source, appendices, comments that
+can leak into the artifact, and the rendered PDF. Search both literal text and
+the macro forms listed above. Inspect every match in context and write a
+blocker issue record. A match that cannot be proven intentional remains
+`ambiguous` and blocks completion. If a confirmed blocker is visible in the
+PDF, record its page and region; if it appears only in source, record the file
+and line and still block the release gate.
+
+The `blockers` gate passes only when every candidate is either removed or
+explicitly documented as intentional by the author, with no unresolved or
+ambiguous marker. It is a read-only audit by default. Apply a deletion only for
+an unmistakable accidental marker; never fill in missing scientific content
+from memory.
 
 ### 1. Intake and freeze
 
@@ -164,7 +221,7 @@ engine) and record it. Save:
 - page renders at a readable print-oriented resolution (normally 150--200
   dpi); and
 - a baseline inventory of headings, paragraphs, labels, floats, captions,
-  citations, technical objects, and canonical terms.
+  citations, technical objects, canonical terms, and placeholder candidates.
 
 Source text alone cannot establish a visual defect. A layout finding requires a
 rendered page or an equivalent layout trace.
@@ -192,9 +249,9 @@ The source integrity stage is split into independent units:
   semantic duplicate paragraphs. It does not merge paragraphs for smoother
   flow.
 - `structure` checks empty or duplicated headings, missing `\input`/`\include`
-  files, duplicate labels, visible TODO residue, and accidental source
-  inclusion. A conceptually missing section remains a deferred presentation
-  finding.
+  files, duplicate labels, and accidental source inclusion. Placeholder and
+  draft-residue findings belong to the mandatory `blockers` unit. A
+  conceptually missing section remains a deferred presentation finding.
 - `terminology` checks the canonical object ledger and repairs only an explicitly
   allowed alias to the canonical form; it never invents a near-synonym.
 - `references` checks figure/table/equation keys, local labels, and rendered
@@ -393,6 +450,8 @@ Return:
 
 - `mode`, selected unit, requested scope, input source/PDF identity, output
   identity, and build command;
+- mandatory `blockers` preflight result, every candidate marker and its
+  classification, and any source/PDF locations;
 - terminology/concept-ledger identity and protected-token gate result;
 - baseline and final warning summaries;
 - applied fixes with issue IDs, locations, and preserved invariants;

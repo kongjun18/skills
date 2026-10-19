@@ -5,6 +5,30 @@ number of figures or tables, or findings that cross section boundaries. It
 defines the evidence needed for a safe local edit; it is not a presentation
 rubric.
 
+## Fatal blocker preflight
+
+Run this audit before every other hygiene unit. Scan included source files,
+captions, tables, appendices, bibliography text, source comments that can leak
+into the artifact, and the rendered PDF. Search case-insensitively for
+standalone markers and macro forms such as `TODO`, `FIXME`, `TBD`, `TBC`, `XXX`,
+`XX`, `???`, `PLACEHOLDER`, `REPLACE`, `INSERT`, `\todo{}`, `\TODO{}`,
+`\fixme{}`, `\placeholder{}`, `<value>`, `<author>`, `待补`, `待定`, and `占位`.
+Use token boundaries and context so intentional content such as `xxHash` is
+not reported as a placeholder. Record ambiguous matches instead of ignoring
+them.
+
+Each candidate gets a blocker issue record with the exact marker, source
+locator, PDF page/region when visible, surrounding text, and one of:
+
+- `confirmed blocker`: unresolved draft or fill-in text;
+- `intentional content`: documented example or notation, with evidence;
+- `ambiguous`: author clarification required and the release gate remains
+  blocked.
+
+The gate passes only when no confirmed or ambiguous candidate remains. Do not
+invent a result, citation, name, or number to clear a marker. Delete a marker
+only when it is demonstrably accidental and its removal leaves complete prose.
+
 ## Baseline commands
 
 Use the paper's own build instructions first. These commands are fallbacks,
@@ -83,10 +107,10 @@ Use one record per independent repair:
 
 ~~~text
 ID: H-###
-Class: mechanics | duplicate | section-artifact | terminology | reference
-      | layout | short-tail
+Class: blockers | mechanics | duplicate | section-artifact | terminology
+      | reference | layout | short-tail
 Severity: major | minor | polish
-Status: applied | retained | deferred | needs-context
+Status: applied | retained | deferred | needs-context | needs-revision
 Location: source path:line or PDF page/region
 Evidence: smallest useful excerpt, competing terms, or before/after render
 Action: exact local change or reason for deferral
@@ -97,7 +121,9 @@ Verification: command, page render, or ledger check
 Major means the local defect changes the apparent object, scope, or
 interpretation. Minor means it causes a concrete local reading or navigation
 problem. Polish means a clear mechanical or visual defect with little effect
-on meaning. These are cleanup priorities, not scientific scores.
+on meaning. Every `blockers` issue is at least `major` and remains
+`needs-revision` until removed or explicitly classified as intentional by the
+author. These are cleanup priorities, not scientific scores.
 
 ## Mechanical audit details
 
@@ -113,8 +139,9 @@ choosing a different figure because it makes the story flow better is a
 presentation decision.
 
 Treat comments, TODOs, draft markers, duplicate labels, and accidentally
-uncommented archival text as artifacts only when their status is clear from the
-source. A comment that contains an author decision is not disposable evidence.
+uncommented archival text as blocker candidates first. A comment that contains
+an author decision is not disposable evidence; classify it as intentional only
+with that evidence and record the classification in the blockers ledger.
 
 ## Figure and table placement audit
 
