@@ -7,7 +7,10 @@ description: Independently audit and safely clean an academic paper's source and
 
 Use this skill for the paper's **surface integrity pass** after the technical
 content is settled. It complements `paper-presentation-review` and
-`paper-presentation-revise`; it does not replace them. The target is a paper
+`paper-presentation-revise`; it does not replace them. Citation correctness
+(whether references exist, match their entries, support their sentences, or
+cover borrowed work) belongs to `paper-integrity`; this skill flags only
+visibly unfinished citations. The target is a paper
 that says the same thing, uses the same objects and evidence consistently, and
 renders without avoidable whitespace, float placement defects, or mechanical
 errors. Every check below is an independently executable unit; running one
@@ -64,8 +67,8 @@ chooses a fluent near-synonym, and checks broad sentence meaning instead of the
 paper-level concept identity. A frequency count, dictionary similarity, or
 shorter rendered line does not establish an alias.
 
-Before any unit edits the source, build or refresh a terminology/concept ledger
-with a stable concept ID, canonical surface form, definition and referent,
+Before any unit edits the source, build or refresh a terminology/concept ledger,
+seeded from the paper's [glossary](../paper-presentation-review/references/glossary.md), with a stable concept ID, canonical surface form, definition and referent,
 layer and scope, explicitly allowed grammatical forms or aliases, forbidden or
 suspicious variants, and the evidence that establishes the choice. During each
 edit, any phrase that may be technical but is not yet classified is
@@ -114,7 +117,7 @@ from memory. Those are presentation or semantic decisions.
 | Mechanics | Grammar, spelling, punctuation, agreement, articles, malformed local sentences, and an unambiguous word-choice slip outside protected terminology | A rewrite that changes emphasis, claim strength, or technical meaning |
 | Repetition | Exact duplicate text, or a clearly accidental semantic duplicate with the same role and evidence | Two passages that share a topic but have different scope, role, or evidence |
 | Sections | Duplicate/empty headings, orphaned `\input`/`\include`, and broken local numbering or cross-reference | A conceptually missing section, a section move, or a new subsection whose responsibility is not specified |
-| Terminology | Normalize only an explicitly allowed alias to the ledger's canonical term when the concept ID is the same | A near-synonym or a choice between distinct objects, layers, states, or operations |
+| Terminology | Normalize only an explicitly allowed alias to the ledger's canonical term when the concept ID is the same, or replace a glossary-banned term with its listed replacement (not `→ rephrase`) | A near-synonym or a choice between distinct objects, layers, states, or operations |
 | References and labels | Broken local references, mismatched figure/table/equation labels, unresolved keys, and stale local names | A citation or attribution whose correctness needs external or scientific judgment |
 | Figures and tables | Clipped panel titles, missing labels, detached captions, wrong source order, a float before its first use, or a float that interrupts a paragraph or appears under the wrong subsection heading | A placement change that requires reordering the argument, changing a figure/table's role, or inventing a new visual |
 | PDF layout | Safe float/caption spacing or local reflow that preserves order and content | Margin, font, figure size, float order, or template changes without authorization |
