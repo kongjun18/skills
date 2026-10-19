@@ -41,6 +41,11 @@ argument allows.
 
 - Never cut a claim, number, formula, citation, figure reference, or
   definition that a later sentence uses. Repair it instead.
+- Treat every canonical technical term and concept-bearing phrase as an
+  immutable interface name. Simplify surrounding wording, never replace a
+  protected term with a shorter or more familiar near-synonym. For example,
+  `routing-point rematerialization` must not become `routing-point rebuild`
+  without an explicit author decision and a terminology-ledger update.
 - Keep every term defined before its first use after the cuts too.
 - Recheck each transition: a cut sentence is often the bridge.
 - Report the cuts: the word count before and after, and the sentences

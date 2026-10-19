@@ -144,6 +144,11 @@ and why. Ask for the change in its scores.
 
 See [Simplify](simplify.md). Measure the word count before and after.
 
+Word-count reduction never authorizes a protected-term substitution. Apply the
+terminology/concept ledger and protected-token diff before accepting a cut or
+replacement; leave a short line or report `Needs context` when the term cannot
+be preserved.
+
 In Early, simplification is allowed when it clarifies the logic, but word-count
 reduction is a `Later` concern. In Draft and Submission, apply the phase's
 normal prose and budget priorities.
@@ -157,6 +162,9 @@ Use a fresh reviewer. Give it the before and after text. Ask:
 3. Which sentences still describe instead of argue, or still say one thing
    twice? Quote each, with a cut or a replacement.
 4. Which sentences now read as too compressed to follow?
+5. Did any cut or replacement change a protected term, concept ID, operation,
+   state, or qualifier? If so, reject it unless an explicit author decision
+   updated the ledger first.
 
 ## Verify, every stage
 
@@ -168,6 +176,8 @@ Use a fresh reviewer. Give it the before and after text. Ask:
 - Reject suggested wording that is better written but less true. For
   example, a claim that holds for only some workloads, or a causal claim no
   measurement shows. Replace it with what is plainly true.
+- Reject a shorter or more fluent near-synonym for a protected term. Confirm
+  the canonical surface form and concept ID against the terminology ledger.
 - Decide disagreements between rounds or reviewers by evidence, and say why.
 
 ## Exit rule

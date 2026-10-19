@@ -1,6 +1,6 @@
 ---
 name: paper-hygiene
-description: Independently audit and safely clean an academic paper's source and rendered PDF for mechanical errors, accidental duplication, terminology drift, section artifacts, figure/table clipping or placement errors, float whitespace, and very short final lines. Apply only meaning-preserving local fixes; route argument, section-responsibility, and presentation-structure decisions to a presentation review or revision skill.
+description: Independently audit and safely clean an academic paper's source and rendered PDF for mechanical errors, accidental duplication, terminology drift, section artifacts, figure/table clipping or placement errors, float whitespace, and very short final lines. Apply only meaning-preserving local fixes, with canonical technical terms and concept identities protected from unapproved synonym replacement; route argument, section-responsibility, and presentation-structure decisions to a presentation review or revision skill.
 ---
 
 # Paper Hygiene
@@ -13,6 +13,47 @@ renders without avoidable whitespace, float placement defects, or mechanical
 errors. Every check below is an independently executable unit; running one
 unit does not imply that the others ran.
 
+## Priority zero: protected terminology and concept inventory
+
+This rule applies to every hygiene unit and every source/PDF update. It
+overrides short-tail cleanup, whitespace reduction, concision, fluency, and
+page-budget pressure.
+
+Technical terms and concept-bearing phrases are protected interface names. This
+includes component, operation, state, data-structure, metric, workload,
+configuration, invariant, claim, figure, and table names. A shorter word can
+change the operation or object while leaving the sentence broadly plausible.
+For example, `routing-point rematerialization` and `routing-point rebuild` must
+not be treated as interchangeable without an explicit author decision.
+
+The failure mode is a local length optimization: the editor sees a long word,
+chooses a fluent near-synonym, and checks broad sentence meaning instead of the
+paper-level concept identity. A frequency count, dictionary similarity, or
+shorter rendered line does not establish an alias.
+
+Before any unit edits the source, build or refresh a terminology/concept ledger
+with a stable concept ID, canonical surface form, definition and referent,
+layer and scope, explicitly allowed grammatical forms or aliases, forbidden or
+suspicious variants, and the evidence that establishes the choice. During each
+edit, any phrase that may be technical but is not yet classified is
+provisionally protected until the author or evidence resolves it:
+
+1. Classify every changed span. If it contains or names a protected item,
+   preserve the canonical form or an explicitly allowed form.
+2. Use deletion of unprotected wording, local reflow, or an approved layout
+   parameter before considering a lexical replacement.
+3. Add or change an alias only after an explicit author decision and a ledger
+   update. Never infer equivalence from shared words, morphology, apparent
+   synonymy, or a reviewer suggestion.
+4. Run a protected-token and concept-ID diff before accepting the edit. The
+   canonical terms, referents, operation/state distinctions, qualifiers, and
+   cross-section uses must match the baseline. If they do not, roll back and
+   report `Needs context`.
+
+If the ledger is missing or the intended referent is uncertain, retain the
+original wording. A short final line is an acceptable result when removing it
+would require changing a protected term.
+
 ## Non-negotiable boundary
 
 An edit is eligible for direct application only when all of the following are
@@ -23,7 +64,8 @@ true:
    guide, or an explicit author decision.
 3. The change does not alter a claim, qualifier, number, evidence binding,
    causal relation, paragraph responsibility, section responsibility, float
-   meaning, concept inventory, or canonical terminology.
+   meaning, concept inventory, protected-token sequence, concept ID, or
+   canonical terminology.
 4. The change can be checked again after recompilation.
 
 Otherwise record a located finding and stop at `Needs context`. In particular,
@@ -35,20 +77,20 @@ from memory. Those are presentation or semantic decisions.
 
 | Area | Directly fix when clear | Report and defer when unclear |
 | --- | --- | --- |
-| Mechanics | Grammar, spelling, punctuation, agreement, articles, malformed local sentences, and an unambiguous word-choice slip | A rewrite that changes emphasis, claim strength, or technical meaning |
+| Mechanics | Grammar, spelling, punctuation, agreement, articles, malformed local sentences, and an unambiguous word-choice slip outside protected terminology | A rewrite that changes emphasis, claim strength, or technical meaning |
 | Repetition | Exact duplicate text, or a clearly accidental semantic duplicate with the same role and evidence | Two passages that share a topic but have different scope, role, or evidence |
 | Sections | Duplicate/empty headings, orphaned `\input`/`\include`, broken local numbering or cross-reference, and visible TODO residue | A conceptually missing section, a section move, or a new subsection whose responsibility is not specified |
-| Terminology | A local variant when a canonical term is established and the object is the same | A choice between distinct objects, layers, states, or operations |
+| Terminology | Normalize only an explicitly allowed alias to the ledger's canonical term when the concept ID is the same | A near-synonym or a choice between distinct objects, layers, states, or operations |
 | References and labels | Broken local references, mismatched figure/table/equation labels, unresolved keys, and stale local names | A citation or attribution whose correctness needs external or scientific judgment |
 | Figures and tables | Clipped panel titles, missing labels, detached captions, wrong source order, a float before its first use, or a float that interrupts a paragraph or appears under the wrong subsection heading | A placement change that requires reordering the argument, changing a figure/table's role, or inventing a new visual |
 | PDF layout | Safe float/caption spacing or local reflow that preserves order and content | Margin, font, figure size, float order, or template changes without authorization |
-| Paragraph tails | Delete a demonstrably dispensable local word or phrase when a rendered final line has at most two words | Any shortening that changes scope, strength, terminology, concept inventory, or sentence logic |
+| Paragraph tails | Delete a demonstrably dispensable **unprotected** local word or phrase when a rendered final line has at most two words | Any replacement or shortening that changes scope, strength, terminology, concept inventory, or sentence logic |
 
-The canonical object must win over a near-synonym. For example, if the paper's
-ledger says that a prefix's candidate is an **alternative**, a later accidental
-use of **continuation** is a terminology defect only when the surrounding
-passage clearly denotes that same object. If the two words may denote different
-objects, leave the text unchanged and request context.
+The ledger's canonical surface form must win over every unapproved variant. A
+near-synonym is not safe merely because the surrounding passage appears to name
+the same broad object: `rematerialization` and `rebuild`, for example, can carry
+different operation semantics. If the ledger does not explicitly establish the
+alias and concept ID, leave the text unchanged and request context.
 
 ## Modes
 
@@ -136,8 +178,9 @@ by the selected unit; a paper-wide run may use these four shared ledgers:
    included files.
 2. **Paragraph inventory:** stable source locator, heading, opening, role,
    key object, evidence, and outgoing endpoint.
-3. **Terminology ledger:** canonical object, allowed aliases, forbidden or
-   suspicious variants, abstraction layer, and evidence for the choice.
+3. **Terminology ledger:** stable concept ID, canonical surface form,
+   definition/referent, allowed grammatical forms or aliases, forbidden or
+   suspicious variants, abstraction layer/scope, and evidence for the choice.
 4. **Artifact map:** figure/table/equation labels, captions, float placement,
    and cross-references.
 
@@ -152,8 +195,8 @@ The source integrity stage is split into independent units:
   files, duplicate labels, visible TODO residue, and accidental source
   inclusion. A conceptually missing section remains a deferred presentation
   finding.
-- `terminology` checks the canonical object ledger and repairs a local variant
-  only when the referent is already established.
+- `terminology` checks the canonical object ledger and repairs only an explicitly
+  allowed alias to the canonical form; it never invents a near-synonym.
 - `references` checks figure/table/equation keys, local labels, and rendered
   targets. Citation correctness that needs external or scientific judgment is
   deferred.
@@ -177,10 +220,12 @@ otherwise report both locations and defer to presentation review.
 
 ### 4. Apply bounded source fixes
 
-Edit the smallest source span that resolves the defect. Keep a change ledger
-with the issue ID, source location, before/after text, evidence for the fix,
-and the invariant it preserves. Do not perform a document-wide synonym sweep
-without a canonical ledger and a reviewed object map.
+Edit the smallest source span that resolves the defect. Before editing, run the
+protected-token/concept-ID gate and classify the changed span. Keep a change
+ledger with the issue ID, source location, before/after text, evidence for the
+fix, and the invariant it preserves. Do not perform a document-wide synonym
+sweep, and do not replace a protected term to save space, even when a shorter
+word sounds equivalent.
 
 After each coherent batch, recompile and rerun the local checks. If a fix
 changes a paragraph's role, adds a concept, changes claim scope, or requires a
@@ -274,6 +319,10 @@ or placement specifiers merely to hide a gap. If the gap is an intentional
 template behavior or fixing it would move a float across a section boundary,
 report it instead.
 
+Do not change prose words as a whitespace repair. If a short final line is the
+cause, use the `tails` unit and its protected-term gate; physical whitespace
+work must not silently become lexical rewriting.
+
 The `whitespace` gate passes only if the new PDF preserves float order and
 caption attachment, removes the targeted avoidable gap, introduces no
 collision or clipping, and does not add overfull/underfull or unresolved-
@@ -288,24 +337,27 @@ captions, bibliography entries, equations, lists, code/pseudocode, and
 intentionally one-line paragraphs.
 
 For each candidate, inspect the source and remove at most one small,
-dispensable local phrase per iteration. Prefer deletion-only edits: a redundant
-modifier, repeated noun, or optional discourse word. A phrase replacement is
-allowed only when every replacement token is already present in the same
-sentence or the canonical terminology ledger, and the before/after proposition,
-objects, relations, scope, modality, tense, evidence, and terminology IDs are
-identical. Do not introduce a new compound, nominalization, abbreviation,
-synonym, or technical term while shortening. For example, never change
-`tokens matched by exact matching` to `exact-match token`: it introduces a new
-term and changes the visible concept form even if the words appear related.
+dispensable **unprotected** local phrase per iteration. Prefer deletion-only
+edits: a redundant modifier, repeated noun, or optional discourse word. Do not
+replace a protected term. The fact that a replacement token appears in the
+terminology ledger authorizes only the exact form or an explicitly listed
+alias; it does not authorize arbitrary swaps between canonical terms. A
+phrase replacement is allowed only for unprotected wording when the
+before/after proposition, objects, relations, scope, modality, tense, evidence,
+and terminology IDs are identical. Do not introduce a new compound,
+nominalization, abbreviation, synonym, or technical term while shortening. For
+example, never change `tokens matched by exact matching` to `exact-match token`:
+it introduces a new term and changes the visible concept form even if the words
+appear related.
 Do not remove qualifiers, numbers, conditions, evidence, technical terms,
 causal links, or words needed for grammar. Do not shorten a paragraph just to
 meet a line-count target when exact semantic preservation cannot be proven.
 
 Recompile after each batch and verify both the sentence meaning and the actual
 rendered line count. Compare the before/after sentence contract: every object,
-relation, qualifier, evidence binding, scope marker, modality, and canonical
-term must have the same ID and role. A tail fix is accepted only when it saves
-the line or removes the targeted short tail without creating a new
+relation, qualifier, evidence binding, scope marker, modality, protected token,
+and canonical term must have the same ID and role. A tail fix is accepted only
+when it saves the line or removes the targeted short tail without creating a new
 widow/orphan, overflow, bad page break, terminology inconsistency, or new
 concept. If exact correspondence cannot be established, abandon the edit and
 report the retained tail to the user. If no terminology ledger or sentence
@@ -318,13 +370,17 @@ Compare the final source and PDF against the frozen baseline:
 
 - rerun the heading, paragraph, terminology, artifact, and cross-reference
   ledgers;
-- compare protected tokens: numbers, units, symbols, citations, labels,
-  canonical object names, and qualifiers;
+- compare protected tokens exactly: numbers, units, symbols, citations, labels,
+  canonical surface forms, concept IDs, operation/state names, and qualifiers;
 - compare float order, caption attachment, page count, and all changed pages;
 - confirm no new compiler warnings or unresolved references;
 - confirm that no section responsibility, paragraph order, argument edge, or
   evidence binding changed; and
 - keep every deferred or uncertain finding with its location and reason.
+
+Any changed protected token or concept ID without an explicit author-approved
+ledger update is a failed gate, even when the sentence remains fluent and the
+rendered line is shorter. An unapproved alias always fails the gate.
 
 If an independent verification pass finds a semantic or presentation change,
 roll back to the last passing artifact and route the issue to the appropriate
@@ -337,6 +393,7 @@ Return:
 
 - `mode`, selected unit, requested scope, input source/PDF identity, output
   identity, and build command;
+- terminology/concept-ledger identity and protected-token gate result;
 - baseline and final warning summaries;
 - applied fixes with issue IDs, locations, and preserved invariants;
 - figure/table placement findings and changes with affected pages, owning

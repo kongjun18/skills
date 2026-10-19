@@ -54,14 +54,18 @@ the repetition is too large, defer to presentation revision.
 
 ### Terminology ledger
 
-| Object ID | Canonical term | Allowed aliases | Suspicious variants | Layer/scope | Evidence |
-| --- | --- | --- | --- | --- | --- |
+| Concept ID | Canonical surface form | Definition/referent | Allowed forms or aliases | Forbidden/suspicious variants | Layer/scope | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
 
 An evidence entry can be a definition in the paper, a notation table, an
-author-provided guide, or a repeated unambiguous usage. A frequency count is
-not evidence that two terms are interchangeable. Mark a change as safe only
-when the local referent is the same object and the canonical term is already
-established.
+author-provided guide, or a repeated unambiguous usage. A frequency count,
+dictionary similarity, shorter line, or reviewer suggestion is not evidence
+that two terms are interchangeable. A canonical surface form is protected;
+only explicitly listed grammatical forms or aliases are allowed. For example,
+do not change `routing-point rematerialization` to `routing-point rebuild`
+without an explicit author decision and a ledger update. Mark a change as safe
+only when the concept ID, referent, operation/state role, and canonical form
+remain unchanged.
 
 ### Artifact and float map
 
@@ -86,7 +90,7 @@ Status: applied | retained | deferred | needs-context
 Location: source path:line or PDF page/region
 Evidence: smallest useful excerpt, competing terms, or before/after render
 Action: exact local change or reason for deferral
-Invariant: claim/number/object/edge/ordering/layout property preserved
+Invariant: claim/number/object/edge/ordering/layout/protected-token/concept-ID property preserved
 Verification: command, page render, or ledger check
 ~~~
 
@@ -99,8 +103,9 @@ on meaning. These are cleanup priorities, not scientific scores.
 
 Read each changed sentence with its preceding and following sentence. Correct
 agreement, punctuation, spelling, article use, and an unmistakable local
-word-choice error. Preserve the paper's established English variant and
-technical capitalization.
+word-choice error outside protected terminology. Preserve the paper's
+established English variant, technical capitalization, and canonical surface
+forms; a shorter near-synonym is not an unmistakable error.
 
 For cross-references, check both the source key and the rendered target. A
 reference to the wrong but existing figure is a terminology/navigation defect;
@@ -172,14 +177,16 @@ equation tokens or a citation-only marker as prose words.
 
 Safe candidates usually include a repeated adjective, an optional discourse
 adverb, or a redundant phrase already stated in the same sentence. Prefer
-deletion-only edits. A replacement is allowed only when every replacement token
-already occurs in the same sentence or the canonical terminology ledger, and
-the sentence contract keeps exactly the same objects, relations, scope,
-qualifiers, modality, tense, evidence bindings, and terminology IDs. Never
-introduce a new compound, nominalization, abbreviation, synonym, or technical
-term while shortening. For example, changing `tokens matched by exact
-matching` to `exact-match token` is prohibited because it creates a new term
-and changes the visible concept form.
+deletion-only edits to unprotected wording. Never replace a protected term.
+The terminology ledger authorizes only the exact canonical form or an
+explicitly listed alias; a token's presence in the ledger is not permission to
+swap one canonical term for another. For unprotected wording, a replacement is
+allowed only when the sentence contract keeps exactly the same objects,
+relations, scope, qualifiers, modality, tense, evidence bindings, and
+terminology IDs. Never introduce a new compound, nominalization, abbreviation,
+synonym, or technical term while shortening. For example, changing `tokens
+matched by exact matching` to `exact-match token` is prohibited because it
+creates a new term and changes the visible concept form.
 
 Do not delete a qualifier (only, at least, up to), condition, metric/unit,
 technical noun, citation, or causal connector merely to gain a line. If the
