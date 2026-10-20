@@ -10,6 +10,7 @@
 ## Maintained Skills
 
 - `address-pr-comments`: fetch and triage GitHub PR review feedback.
+- `git`: local Git conventions, starting with worktrees under the repository's `.worktree/`.
 - `good-agent`: general engineering and research work discipline.
 - `high-signal-writing`: concise, reader-first agent responses.
 - `paper-presentation`: orchestrator for paper presentation review, guided paragraph generation, structural revision, and verification; delegates to the review and revise skills.
