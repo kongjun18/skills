@@ -10,6 +10,7 @@
 ## Maintained Skills
 
 - `address-pr-comments`: fetch and triage GitHub PR review feedback.
+- `exploration-report`: agent-run explorations recorded as reproducible in-repo reports (TL;DR, checklist scorecard, findings, caveats, anomalies, analysis, data index, reproduce steps) with a structural linter.
 - `git`: local Git conventions, starting with worktrees under the repository's `.worktree/`.
 - `good-agent`: general engineering and research work discipline.
 - `high-signal-writing`: concise, reader-first agent responses.
