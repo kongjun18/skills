@@ -1,6 +1,6 @@
 ---
 name: exploration-report
-description: Run an agent-driven exploration (benchmarks, measurements, feasibility studies, literature-backed comparisons, design-space sweeps) and record it as a reproducible, in-repo report with a short TL;DR, a scorecard that mirrors the task checklist, findings, caveats, anomalies, detailed per-question analysis, a data index, and reproduction steps. Use when the user hands over an exploration checklist or research questions and wants conclusions they can trust and rerun later. Trigger phrases include explore and report, exploration report, investigate and write up, benchmark report, feasibility study, "tell me the conclusions", "make it reproducible", update or conclude an exploration report.
+description: Run an agent-driven exploration (benchmarks, measurements, feasibility studies, literature-backed comparisons, design-space sweeps) and record it as a reproducible, in-repo report with a short TL;DR, a scorecard that mirrors the task checklist, findings, caveats, anomalies, detailed per-question analysis, a data index, and reproduction steps. Use when the user hands over an exploration checklist or research questions and wants conclusions they can trust and rerun later. Trigger phrases include explore and report, exploration report, investigate and write up, benchmark report, feasibility study, "tell me the conclusions", "make it reproducible", update or conclude an exploration report, questions about an exploration report the user has read.
 ---
 
 # Exploration Report
@@ -76,6 +76,24 @@ Fix what the reviewer confirms, and re-run the linter.
 ### 5. Hand Off
 
 In chat, give the TL;DR, the scorecard's unanswered or blocked items, and the path to the report. Apply `high-signal-writing` to the chat message, not to the report.
+
+### 6. Revise After Discussion
+
+When the user asks questions after reading the report, treat each question as a gap: the report should have answered it or made it unnecessary. The round ends when the report alone answers every question.
+
+1. Answer in chat first, from the report's data and sources. If the answer needs new experiments or sources, collect them under the Run rules. If the report is concluded, first ask whether to reopen it or start a follow-up report.
+2. Put the answer where a reader would have looked for it:
+   - challenges or narrows a conclusion: the TL;DR line, the Scorecard answer, and the Analysis subsection;
+   - asks how something was measured or what was held fixed: that subsection's method or setup;
+   - asks what a term, metric, or number means: define it where it first appears;
+   - exposes a limit of the evidence: Caveats; an unexplained observation: Anomalies;
+   - cannot be answered yet: Open Questions.
+3. Integrate rather than append. Rewrite the affected text so the report reads as if it had been written with the answer from the start. Do not add a Q&A or FAQ section, and do not quote the user's questions in the report.
+4. When an answer changes a conclusion, update every place that states it: TL;DR, Scorecard, Findings, and Analysis.
+5. Add one dated Changelog entry per round that says what changed, such as "defined the throughput denominator in Q2; narrowed TL;DR 1 to 64 KiB blocks".
+6. Verify by giving a fresh-context subagent only the updated report and the user's questions, without the chat history. Fix every question it cannot answer from the report or answers differently from you, then re-run the linter.
+
+In chat, answer each question and name the sections you changed.
 
 ## Report Directory
 
@@ -162,7 +180,7 @@ When a comparison mixes tags, such as a measured number against a cited one, say
 
 A report is `active` while its exploration continues. Update it in place: revise the TL;DR, Scorecard, and Analysis sections to reflect current evidence, and add a dated Changelog entry for each material change. Add rows for checklist items added later.
 
-When the user concludes the exploration, set `Status: concluded` and stop editing it, except to fix errors, each of which gets a dated Changelog entry. Follow-up work starts a new report that links back to this one.
+When the user concludes the exploration, set `Status: concluded` and stop editing it, except to fix errors and to fold in discussion answers that use only existing evidence (see [Revise After Discussion](#6-revise-after-discussion)); each gets a dated Changelog entry. Follow-up work that needs new evidence starts a new report that links back to this one, unless the user reopens this one.
 
 ## Relation To Other Skills
 
@@ -177,4 +195,5 @@ When the user concludes the exploration, set `Status: concluded` and stop editin
 - Caveats and anomalies are recorded separately, or each section states that there are none.
 - The Reproduce section names prerequisites, inputs, commands, expected outputs, and runtime.
 - The linter passes, and the reviewer subagent's confirmed findings are addressed.
+- After a discussion round, a fresh reader answers each of the user's questions correctly from the report alone.
 - The report, scripts, and data are committed together.
