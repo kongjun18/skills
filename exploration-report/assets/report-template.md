@@ -61,7 +61,7 @@ out, suggested next check. Write "None observed." if there are none. -->
 - **Method:** TODO how it was measured or sourced.
 - **Setup:** TODO what was held fixed: inputs, sizes, parameters, hardware, warmup, repetitions.
 - **Results:** TODO table or figure, with variability and repetition count.
-- **Interpretation:** TODO what the results mean, kept separate from the observations.
+- **Interpretation:** TODO what the results mean, kept separate from the observations, including explanations ruled out and why.
 - **Evidence:** TODO links to `data/...` and `scripts/...`.
 
 ## Reproduce

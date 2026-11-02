@@ -54,7 +54,7 @@ LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)\s]+)[^)]*\)")
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$", re.MULTILINE)
 STATUS_RE = re.compile(r"^Status:\s*(\S+)\s*$", re.MULTILINE)
 NUMBER_RE = re.compile(r"(?<![\w.])\d+(?:\.\d+)?")
-TAG_RE = re.compile(r"\[(measured|derived|estimated|cited:[^\]]+)\]")
+TAG_RE = re.compile(r"\[(measured|derived|estimated|(?:cited|discussion):[^\]]+)\]")
 
 
 def slugify(heading: str) -> str:

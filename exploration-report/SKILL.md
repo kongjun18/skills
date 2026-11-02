@@ -1,6 +1,6 @@
 ---
 name: exploration-report
-description: Run an agent-driven exploration (benchmarks, measurements, feasibility studies, literature-backed comparisons, design-space sweeps) and record it as a reproducible, in-repo report with a short TL;DR, a scorecard that mirrors the task checklist, findings, caveats, anomalies, detailed per-question analysis, a data index, and reproduction steps. Use when the user hands over an exploration checklist or research questions and wants conclusions they can trust and rerun later. Trigger phrases include explore and report, exploration report, investigate and write up, benchmark report, feasibility study, "tell me the conclusions", "make it reproducible", update or conclude an exploration report, questions about an exploration report the user has read.
+description: Run an agent-driven exploration (benchmarks, measurements, feasibility studies, literature-backed comparisons, design-space sweeps) and record it as a reproducible, in-repo report with a short TL;DR, a scorecard that mirrors the task checklist, findings, caveats, anomalies, detailed per-question analysis, a data index, and reproduction steps. Use when the user hands over an exploration checklist or research questions and wants conclusions they can trust and rerun later. Trigger phrases include explore and report, exploration report, investigate and write up, benchmark report, feasibility study, "tell me the conclusions", "make it reproducible", update or conclude an exploration report, questions about or discussion of an exploration report the user has read.
 ---
 
 # Exploration Report
@@ -16,7 +16,7 @@ Turn an exploration checklist into a report that serves two readers:
 checklist item → question (+ hypothesis) → method → data → result → verdict → TL;DR line
 ```
 
-The report is a deliverable, not a log. It describes what is known at the end of the exploration, with each claim traceable to evidence.
+The report is a deliverable, not a log. It describes what is currently known about the exploration, with each claim traceable to evidence, and it keeps accumulating knowledge as the user discusses it (see [Accumulate Discussion Knowledge](#6-accumulate-discussion-knowledge)).
 
 ## Non-Negotiable Principles
 
@@ -77,23 +77,26 @@ Fix what the reviewer confirms, and re-run the linter.
 
 In chat, give the TL;DR, the scorecard's unanswered or blocked items, and the path to the report. Apply `high-signal-writing` to the chat message, not to the report.
 
-### 6. Revise After Discussion
+### 6. Accumulate Discussion Knowledge
 
-When the user asks questions after reading the report, treat each question as a gap: the report should have answered it or made it unnecessary. The round ends when the report alone answers every question.
+Discussion after the user reads the report creates knowledge: answers, corrections, new interpretations, explanations ruled out, implications, decisions, and new questions. The report is where that knowledge accumulates, so a later reader gets everything the discussion established without the chat. A question is also a signal of a gap: if it needed asking, the report should have answered it.
 
 1. Answer in chat first, from the report's data and sources. If the answer needs new experiments or sources, collect them under the Run rules. If the report is concluded, first ask whether to reopen it or start a follow-up report.
-2. Put the answer where a reader would have looked for it:
-   - challenges or narrows a conclusion: the TL;DR line, the Scorecard answer, and the Analysis subsection;
-   - asks how something was measured or what was held fixed: that subsection's method or setup;
-   - asks what a term, metric, or number means: define it where it first appears;
-   - exposes a limit of the evidence: Caveats; an unexplained observation: Anomalies;
-   - cannot be answered yet: Open Questions.
-3. Integrate rather than append. Rewrite the affected text so the report reads as if it had been written with the answer from the start. Do not add a Q&A or FAQ section, and do not quote the user's questions in the report.
-4. When an answer changes a conclusion, update every place that states it: TL;DR, Scorecard, Findings, and Analysis.
-5. Add one dated Changelog entry per round that says what changed, such as "defined the throughput denominator in Q2; narrowed TL;DR 1 to 64 KiB blocks".
-6. Verify by giving a fresh-context subagent only the updated report and the user's questions, without the chat history. Fix every question it cannot answer from the report or answers differently from you, then re-run the linter.
+2. After each round, list what the discussion established and record each item where a reader would look for it:
+   - an answer the report should already have given: the section that raised the question, such as a definition where the term first appears, or the method or setup of an Analysis subsection;
+   - a corrected or narrowed conclusion: every place that states it, including TL;DR, Scorecard, Findings, and Analysis;
+   - a new interpretation or mechanism: the Analysis subsection's interpretation, and Findings if it changes decisions;
+   - an explanation considered and ruled out: the interpretation or the Anomalies entry it concerns, with what ruled it out;
+   - an implication or decision agreed with the user: Findings;
+   - a limit of the evidence: Caveats; an unexplained observation: Anomalies;
+   - a new question or follow-up experiment: Open Questions.
+3. Keep provenance. Tag claims that rest on discussion rather than on report data with `[discussion: YYYY-MM-DD]`, and state the reasoning or who asserted it. Record untested ideas as hypotheses, not facts.
+4. Integrate rather than append. Rewrite the affected text so the report reads as one coherent account of current knowledge. Do not add a Q&A or FAQ section, and do not quote the user's questions in the report.
+5. Add one dated Changelog entry per round that says what knowledge was added or changed, such as "defined the throughput denominator in Q2; ruled out PCIe contention as the cause of the 4 KiB dip; narrowed TL;DR 1 to 64 KiB blocks".
+6. Promote knowledge that outlives this exploration, such as a hardware property, a rule of thumb, or a design decision, to the topic's repo-memory note, linking back to the report.
+7. Verify by giving a fresh-context subagent only the updated report, the user's questions, and your list of established items, without the chat history. Fix every question it cannot answer from the report or answers differently from you, and every item it cannot find, then re-run the linter.
 
-In chat, answer each question and name the sections you changed.
+In chat, answer each question and list what you recorded and where.
 
 ## Report Directory
 
@@ -165,6 +168,7 @@ Tag every reported number with its source:
 - `[cited: <source>]`: taken from a paper, datasheet, or public benchmark; give the reference and the setup it was measured under.
 - `[derived]`: computed from other numbers; show the formula or link the script.
 - `[estimated]`: an assumption or back-of-envelope value; state the assumption.
+- `[discussion: YYYY-MM-DD]`: established in discussion with the user rather than by report data, such as domain knowledge or agreed reasoning; state the reasoning or who asserted it.
 
 When a comparison mixes tags, such as a measured number against a cited one, say so in the claim and list the setup differences in Caveats.
 
@@ -175,16 +179,17 @@ When a comparison mixes tags, such as a measured number against a cited one, say
 - Present the numbers in a table or figure, then interpret them. Keep interpretation separate from observation.
 - When a claim is relative ("not a bottleneck", "fast enough", "matches"), report the ratio against the explicit reference it is relative to.
 - Link the exact data file and script behind each table or figure.
+- Record explanations considered and ruled out, with what ruled them out, so later readers do not re-derive dead ends.
 
 ## Living Reports
 
 A report is `active` while its exploration continues. Update it in place: revise the TL;DR, Scorecard, and Analysis sections to reflect current evidence, and add a dated Changelog entry for each material change. Add rows for checklist items added later.
 
-When the user concludes the exploration, set `Status: concluded` and stop editing it, except to fix errors and to fold in discussion answers that use only existing evidence (see [Revise After Discussion](#6-revise-after-discussion)); each gets a dated Changelog entry. Follow-up work that needs new evidence starts a new report that links back to this one, unless the user reopens this one.
+When the user concludes the exploration, set `Status: concluded` and stop editing it, except to fix errors and to record discussion knowledge that needs no new evidence (see [Accumulate Discussion Knowledge](#6-accumulate-discussion-knowledge)); each gets a dated Changelog entry. Follow-up work that needs new evidence starts a new report that links back to this one, unless the user reopens this one.
 
 ## Relation To Other Skills
 
-- `repo-memory`: a report is a dated record of one exploration. Durable conclusions that should guide future work go into the topic's repo-memory note, which links back to the report.
+- `repo-memory`: a report is a dated record of one exploration. Durable conclusions that should guide future work, including those established in discussion, go into the topic's repo-memory note, which links back to the report.
 - `systems-evaluation-planner` and `systems-paper-plotting`: use them when report figures are headed for a paper.
 - `high-signal-writing`: applies to the chat handoff only.
 
@@ -195,5 +200,5 @@ When the user concludes the exploration, set `Status: concluded` and stop editin
 - Caveats and anomalies are recorded separately, or each section states that there are none.
 - The Reproduce section names prerequisites, inputs, commands, expected outputs, and runtime.
 - The linter passes, and the reviewer subagent's confirmed findings are addressed.
-- After a discussion round, a fresh reader answers each of the user's questions correctly from the report alone.
+- After a discussion round, a fresh reader answers each of the user's questions and finds each established item from the report alone.
 - The report, scripts, and data are committed together.
