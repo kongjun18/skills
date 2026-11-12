@@ -1,0 +1,7 @@
+interface:
+  display_name: "System Research Scout"
+  short_description: "Survey top systems papers and brainstorm evidence-bound ideas"
+  default_prompt: "Use $system-research-scout to survey the last two years of top systems/database/storage/networking conference papers, fan out reader/synthesis/critic sub-agents, and synthesize evidence-bound research ideas. Run scripts/validate_outputs.py before declaring done."
+
+policy:
+  allow_implicit_invocation: true
