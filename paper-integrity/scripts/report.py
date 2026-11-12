@@ -36,6 +36,10 @@ STAGES = [
     ("6 overlap", "findings-overlap.json"),
     ("7 refute", "refute-*.json"),
 ]
+LEGEND = ("Severity: S0 blocks submission, S1 major (lowers reviewer trust), S2 minor polish. "
+          "Confidence: verified = a source record or quoted passage shows the defect; "
+          "suspected = a heuristic or failed search points to it, unconfirmed; "
+          "no-access = the source could not be read.")
 S0_CLASSES = {"4 claim support": "claim contradiction, misattribution",
               "5 omission": "uncited borrowed work",
               "6 overlap": "copied text"}
@@ -155,7 +159,8 @@ def main():
         + (f" ({', '.join(f'{k}={n}' for k, n in sorted(vcount.items()))})" if vcount else ""),
         "- Source access: " + (", ".join(f"{k}={n}" for k, n in sorted(access.items())) or "not fetched"),
     ] + [f"- Note: {n}" for n in run.get("notes", [])] + ["", "## Open findings", ""]
-    header = ["| ID | Sev | Conf | Category | Location | Evidence | Suggested action |",
+    header = [LEGEND, "",
+              "| ID | Severity | Confidence | Category | Location | Evidence | Suggested action |",
               "| --- | --- | --- | --- | --- | --- | --- |"]
     if open_:
         lines += header + [
@@ -167,7 +172,7 @@ def main():
     closed = [f for f in findings if f["status"] != "open"]
     if closed:
         lines += ["", "## Closed findings", "",
-                  "| ID | Sev | Status | Category | Location | Notes |", "| --- | --- | --- | --- | --- | --- |"]
+                  "| ID | Severity | Status | Category | Location | Notes |", "| --- | --- | --- | --- | --- | --- |"]
         lines += [f"| {f['id']} | {f['severity']} | {f['status']} | {f['category']} | "
                   f"{cell(f['location'])} | {cell('; '.join(f['notes']))} |" for f in sorted(closed, key=key)]
     counts = {s: sum(1 for f in open_ if f["severity"] == s) for s in SEVERITY_ORDER}
@@ -202,7 +207,8 @@ def render_summary(out, run, gate, findings, open_, ran, uses, verdicts, access,
     major = sorted([f for f in open_ if f["severity"] in ("S0", "S1")], key=key)
     lines += ["", "**Open S0 and S1**", ""]
     if major:
-        lines += ["| # | Sev | Conf | Citation | Where | Problem | Action |",
+        lines += [LEGEND, "",
+                  "| # | Severity | Confidence | Citation key | Location | Problem | Action |",
                   "| --- | --- | --- | --- | --- | --- | --- |"]
         lines += [f"| {i} | {f['severity']} | {f['confidence']} | `{f.get('key') or '-'}` | "
                   f"{cell(f['location'])} | {short(f['evidence'])} | {short(f['suggestion'], 100)} |"

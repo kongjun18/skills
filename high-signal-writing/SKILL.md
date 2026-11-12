@@ -142,6 +142,7 @@ State the ambiguity and why it changes the result, then ask the smallest questio
 - Use no heading for a one- or two-sentence response.
 - Use short bullets when the user must scan multiple parallel facts, options, or actions.
 - Use a small table only when exact repeated-field comparison is clearer than prose.
+- Write table headers and cell codes for a reader who has seen only this message. For each header, check whether the user used the term or it is standard in their field; if not, rename it in plain words or define it in a one-line legend directly above the table. Do not use internal IDs, schema keys, stage names, or coined abbreviations as headers. Give units and direction, such as *p99 latency (ms, lower is better)*, and name the baseline of any ratio or delta. Give coded cell values such as ✓, `S1`, or `partial` a legend.
 - Use a visualization only when relationships, sequence, or hierarchy would otherwise be hard to understand.
 - Avoid decorative headings, repeated summaries, and template sections with no content.
 - Make material findings easy to spot. Bold a short label or result when it changes what the user should do or believe, such as **Anomaly**, **Failed validation**, **Decision needed**, or **Unverified cause**. Follow it with the concrete finding and its impact or next step.
@@ -155,7 +156,7 @@ Before sending a response, check:
 2. Can any sentence be removed without losing correctness, evidence, actionability, or necessary context?
 3. Did the response report the outcome instead of narrating the process?
 4. Are facts, assumptions, hypotheses, recommendations, and decisions distinguishable where needed?
-5. Is every new term defined where it first appears?
+5. Is every new term defined where it first appears, including table headers and cell codes the user could not explain without asking?
 6. Are material failures, uncertainty, limitations, and risks visible?
 7. Are notable results and unresolved decisions easy to spot without overstating them?
 8. Does the formatting make the response easier to scan?
