@@ -1,0 +1,4 @@
+interface:
+  display_name: "Slide Presentation"
+  short_description: "Create and edit slide presentations with reusable templates"
+  default_prompt: "Create a slide presentation using the available templates."
