@@ -26,7 +26,7 @@
 - `repo-memory`: repository-local knowledge and closeout protocol.
 - `systems-evaluation-planner`: systems-paper claim and evaluation planning.
 - `systems-paper-plotting`: auditable systems-paper figure production.
-- `slide-presentation`: slide presentation creation and reusable templates.
+- `slide-presentation`: spec-first slide decks (storyline → per-slide Markdown spec → pptx builder → render and lint), with case profiles (research group talk, project sync meeting) and project overrides.
 
 ## Conventions
 
