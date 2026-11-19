@@ -92,7 +92,9 @@ These are cleanup priorities, not scientific scores.
 ## Workflow
 
 1. **Intake and baseline.** Locate the source root, bibliography, build
-   command, template, current PDF, writing guide, and `GLOSSARY.md`. Build in
+   command, template, current PDF, writing guide, `GLOSSARY.md`, and the
+   author's [style conventions](../paper-writer/references/author-style.md)
+   (its prohibited wording and LaTeX conventions are `mechanics` checks). Build in
    scratch space with the repository's documented command. Record the source
    revision, PDF hash, page count, and warning summary, and render the pages.
    A layout finding needs a rendered page; source text alone cannot establish

@@ -28,8 +28,9 @@ correct, novel, or sufficient.
 
 Read before judging:
 
-1. the project's `AGENTS.md`, writing guide, paper rules, and the user's style
-   rules;
+1. the project's `AGENTS.md`, writing guide, and paper rules, and the
+   author's cross-paper conventions in
+   [author-style.md](../paper-writer/references/author-style.md);
 2. the glossary `GLOSSARY.md` at the manuscript root, under
    `paper-writer`'s [terminology contract](../paper-writer/references/terminology.md);
 3. the outline for the scope from the project's declared outline location, if

@@ -132,8 +132,8 @@ that you assume `Draft`.
 
 ## Context: what to load
 
-1. **Rules.** The project's `AGENTS.md`, writing guide, paper rules, and the
-   user's style rules.
+1. **Rules.** The project's `AGENTS.md`, writing guide, and paper rules, and
+   the author's cross-paper conventions in [author-style.md](references/author-style.md).
 2. **Glossary and ledger.** `GLOSSARY.md` at the manuscript root, then the
    ledger per [terminology.md](references/terminology.md).
 3. **Outline.** The project's declared outline location, from its
@@ -199,7 +199,7 @@ change the author approves. A fluent draft that fails the gate is not done.
 
 A project extends this skill with its own `AGENTS.md` or project skill, holding
 only project specifics: the outline location and format, the glossary,
-writing-guide and style rules, evidence sources, the placeholder macro, build
+paper-specific writing-guide rules, evidence sources, the placeholder macro, build
 commands, branch conventions, venue and budget, story constraints for
 reviewers, and lessons from earlier reviews of that paper. It tells the agent
 to load this skill first and never copies its method.
