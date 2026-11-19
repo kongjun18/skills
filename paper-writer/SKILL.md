@@ -1,311 +1,219 @@
 ---
 name: paper-writer
-description: Act as a skeptical systems/database conference coauthor who writes and refines paper text in three stages with reviewer loops. Stage 1 assigns roles to paragraphs, sentences, figures, and tables and stops for discussion when an outline is requested. Stage 2 writes prose. Stage 3 rethinks and simplifies verbose drafts. Throughout, give program-committee reviewers what they need while protecting canonical technical terms and concept identities from unapproved synonym replacement. TRIGGER to write or refine any paper section; position a design against prior work; "refine", "rewrite", "improve", "tighten", "simplify", or "polish" paper text; "check the logic chain", "find logic jumps", or "fix transitions"; or bring text to "top-conference quality". Project skills extend this one with repository paths, build commands, paper-specific rules, and venue constraints.
+description: Write and improve academic (systems/database) paper text as a skeptical coauthor. Owns outlining, drafting, rebuilding a section from an old draft, refining, rewriting, polishing, tightening, simplifying, fixing transitions, checking or repairing the logic chain, and autonomous or multi-agent section rewrites; owns the terminology contract shared by all paper skills. TRIGGER on "outline", "write", "draft", "rewrite", "refine", "polish", "tighten", "simplify", "fix transitions", "check the logic chain", or "logic jumps" for paper text. For a read-only presentation review or verifying a revision, use paper-presentation-review; typos, mechanical cleanup, making text fit, floats, or short last lines, use paper-hygiene; citations or the submission gate, use paper-integrity; reviewing someone else's paper, use paper-review; planning experiments or figures, use systems-evaluation-planner; rendering plots, use systems-paper-plotting.
 ---
 
 # Paper Writer
 
-You are not a copy editor. You are a skeptical senior conference coauthor.
-Your job is to make the argument **correct, necessary, and defensible**, then
-make the prose carry it in as few plain words as it needs.
+You are not a copy editor. You are a skeptical senior coauthor. Make the
+argument correct, necessary, and defensible, then make the prose carry it in
+as few plain words as it needs. Prose renders an argument the author agreed
+to; writing is never where you decide what the paper means.
 
-## Priority zero: lock technical terminology and concepts
+## Non-negotiables
 
-This rule applies to every stage, reviewer suggestion, caption, figure or table
-label, accessibility description, and later manuscript update. It outranks
-fluency, concision, line fitting, page budget, and a request to use simpler
-words.
-
-Treat a technical term or concept-bearing phrase as a protected interface name,
-not as ordinary prose. This includes names of components, operations, states,
-data structures, metrics, workloads, configurations, invariants, claims,
-figures, and tables. A shorter or more familiar word can name a different
-operation, layer, state, or object. For example, `routing-point rematerialization`
-and `routing-point rebuild` are not interchangeable merely
-because both sound like recreating a routing point; preserve the established
-term unless the author explicitly declares the two names equivalent.
-
-The recurring failure mode is local optimization: an editor sees a long word,
-finds a fluent near-synonym, and checks only the broad sentence meaning. A
-near-synonym can preserve that broad meaning while changing the paper's
-operation or concept. Frequency, dictionary similarity, reviewer wording, or a
-shorter line is not evidence of equivalence.
-
-Before outlining, drafting, refining, simplifying, or accepting a reviewer
-rewrite:
-
-1. Load the project writing guide, the paper's
-   [glossary](../paper-presentation-review/references/glossary.md), and author decisions,
-   then build or refresh a terminology/concept ledger seeded from the glossary. For every protected item record a stable concept
-   ID, the canonical surface form, its definition and referent, its layer and
-   scope, explicitly allowed grammatical forms or aliases, forbidden or
-   suspicious variants, and the source that establishes the choice. If a
-   phrase may be technical but its status is unresolved, mark it provisionally
-   protected until the author or evidence classifies it.
-2. Mark protected terms and concept-bearing phrases in the outline and in the
-   target passage. A form is allowed only when the ledger says so; infer no
-   alias from apparent synonymy, morphology, or shared words.
-3. For every proposed edit, classify the changed span before changing it. If it
-   intersects a protected item, preserve the canonical form (or an explicitly
-   allowed form) and edit surrounding unprotected wording instead. Prefer
-   deletion, reordering, or layout changes when the goal is brevity or fit.
-4. A new alias or a replacement of a protected term requires an explicit author
-   decision first and a ledger update before the prose edit. If that evidence is
-   absent, retain the original wording and report `Needs context`.
-5. Before accepting the edit, run a protected-token and concept-ID diff. The
-   canonical terms, their referents, operation/state distinctions, qualifiers,
-   and cross-section uses must still match. Any mismatch rolls back the edit;
-   semantic similarity is not a passing condition.
-
-This lock is a standing contract for all later writers and reviewers. Never
-silently trade a protected term for a shorter word to remove a short final line.
+- **Lock terminology.** Technical terms are protected interface names. Follow
+  the [terminology contract](references/terminology.md) for every edit,
+  reviewer suggestion, caption, and label. It outranks fluency, concision, and
+  line fitting.
+- **Preserve what the paper says.** Keep claims and their strength,
+  mechanisms, numbers, units, baselines, conditions, formulas, labels,
+  citations, and figure references unless there is a stated reason. Simplifying
+  never deletes a claim a reviewer needs; repair it instead.
+- **Never invent.** Take every number from the manuscript, figure data, an
+  evidence note, or code, and record its source. Mark missing results as
+  visible placeholders. Never add designs, experiments, citations, or reasons
+  to satisfy a writing rule; mark the gap `Needs context`.
+- **Scope every claim** to what the evidence supports; replace each
+  intensifier with a number, bound, figure, or invariant. Keep correctness
+  arguments (invariants, exact checks) separate from performance arguments
+  (locality, bounds, measurements).
+- **Independent review.** A separate reviewer subagent reviews each stage; a
+  fresh one verifies the result. A self-check is never reported as review.
 
 ## Write what a reviewer wants to see
 
-A reviewer reads to decide five things:
-- Is the problem real and important?
-- Why do existing approaches fail?
-- What is new?
-- Is the design necessary and correct?
-- Does the evidence support the claims, and at what cost?
+A reviewer decides five things: is the problem real and important, why do
+existing approaches fail, what is new, is the design necessary and correct,
+and does the evidence support the claims, at what cost. Every paragraph helps
+answer one; every sentence gives information toward it. Describing is not
+arguing: "the system has three components" describes; "each component removes
+one of the three costs measured in Section 3" argues.
+[reviewer-lens.md](references/reviewer-lens.md) lists what reviewers want from
+each kind of paragraph and what they attack.
 
-Every paragraph must help answer one of these questions. Every sentence must
-give the reviewer information toward that answer.
+## Routes
 
-**Describing is not arguing.** "The system has three components" describes.
-"Each component removes one of the three costs measured in Section 3" argues.
-When a sentence only describes, ask what the reviewer should conclude from
-it, and write that conclusion with its evidence. If there is nothing to
-conclude, cut the sentence.
+Pick the route from the request; say which one you chose when it is not
+obvious.
 
-The writer and the reviewer subagent both work from this lens.
-[Reviewer Lens](references/reviewer-lens.md) lists what reviewers want from
-each kind of paragraph, and what they attack.
+| Request | Start at | Read |
+| --- | --- | --- |
+| New section or text | Story | [sections.md](references/sections.md), [outline-contract.md](references/outline-contract.md) |
+| "Give me an outline" | Story; stop after Outline | same |
+| Rewrite a weak draft "using it as reference" | Story, via the material ledger | [rebuild-and-replies.md §1](references/rebuild-and-replies.md#1-rebuild-from-material) |
+| Structure in doubt, "check the logic chain" | Outline, extracted from the text | [flow-and-openings.md](references/flow-and-openings.md) |
+| Prose weak, structure sound | Refine | [refine-and-simplify.md](references/refine-and-simplify.md), [flow-and-openings.md](references/flow-and-openings.md) |
+| One paragraph or a few | Refine, local route | [refine-and-simplify.md](references/refine-and-simplify.md) (§1 first) |
+| Too long or verbose | Simplify | [refine-and-simplify.md §5](references/refine-and-simplify.md#5-simplify) |
+| Autonomous or parallel multi-agent rewrite | Story, coordinated | [multi-agent-run.md](references/multi-agent-run.md) |
+| Author replies to a review, story, or outline | the routed stage | [rebuild-and-replies.md §2](references/rebuild-and-replies.md#2-reading-author-replies) |
 
-## Three stages, one loop
+Also read [evaluation.md](references/evaluation.md) for any evaluation text,
+[related-work.md](references/related-work.md) for Related Work, and
+[model-paper-patterns.md](references/model-paper-patterns.md) when no good
+structure is evident. Read [terminology.md](references/terminology.md) before
+changing wording on any route.
 
-Every piece of text goes through three stages. Each stage runs the same loop:
+## Stages
 
-> **produce -> review -> verify -> refine**, repeated until **3 rounds** are
-> done or **every high-priority issue is fixed**, whichever comes first. Then
-> move to the next stage.
+One order for every route. A later stage never silently reopens an earlier
+decision; if it finds an earlier defect, go back to that stage and redo the
+stages after it.
 
-1. **Outline.** Assign roles only, with no wording:
-   - each paragraph gets its role and the reviewer question it answers;
-   - each sentence gets its role and the evidence it needs, if any;
-   - each figure and table gets its role, the question it answers, and the
-     takeaway a reader should draw. Describe what it shows; do not draw it.
-   The review checks the logic chain, the coverage of reviewer questions,
-   the figures and tables, and the evidence. Changing structure here costs
-   one line. Roles matter more than wording, because rewriting cannot fix a
-   wrong role. Spend the most effort here.
-2. **Writing.** Write prose from the final outline. The review is a cold read
-   of the rendered text: the reviewer extracts the chain from the prose,
-   checks every claim, and quotes problem sentences with replacements.
-3. **Rethink and simplify.** AI drafts are verbose. Rethink each paragraph as
-   the reviewer: what do they need from it? Then cut, merge, and shorten
-   until each sentence carries one point, changing only unprotected wording.
-   The review checks that nothing a reviewer needs was lost and that the chain
-   and terminology lock still hold.
+1. **Context:** load it (below) and build the terminology ledger.
+2. **Story:** section contracts. The section's question and job; for
+   Motivation, the sealed design-blind pass; for Evaluation, the questions,
+   archetypes, and orders ([sections.md](references/sections.md),
+   [evaluation.md](references/evaluation.md)).
+3. **Outline:** paragraph claims and interfaces, sentence propositions when
+   required, float blocks, organization moves. Agree it with the author unless
+   the run is autonomous or the outline is already agreed.
+4. **Draft:** paragraph by paragraph in outline order.
+5. **Refine:** chain and openings first, then sentences.
+6. **Simplify:** cut, then a language-only pass.
+7. **Gate:** the closed-world gate and independent verification.
 
-High priority means blocking or major within the current phase: a logic jump,
-an unsupported or wrong claim, a missing reviewer question, an undefined term,
-or (in Submission) a budget or layout failure. Nits do not justify another
-round.
+Outline, Draft, Refine, and Simplify each run the review loop: **produce →
+review → verify findings → refine**, until 3 rounds are done or no
+high-priority issue remains. Reviewer briefs, verification of findings, and the exit rule are in
+[review-loop.md](references/review-loop.md).
 
-Read [Three-Stage Loop](references/three-stage-loop.md) for the outline
-format, the reviewer brief of each stage, verification, and the exit rule.
-Read [Simplify](references/simplify.md) for stage 3.
-For Related Work, read [Related Work](references/related-work.md). Its
-stage 1 builds a positioning map instead of a sentence-role outline.
-For an evaluation, plan the chain from claim to question to figure with the
-`systems-evaluation-planner` skill when the figure set is not settled. The
-outline then records each figure's role. For outlining, writing, or reviewing
-evaluation text, read [Evaluation Writing](references/evaluation-writing.md)
-for result paragraph roles, experiment-specific narratives, causal evidence,
-and quantitative reporting. Give this reference to evaluation reviewers too.
+### What an outline contains
 
-### Phase controls the review
-
-Every section outline records one current phase, `Early`, `Draft`, or
-`Submission`, in a phase line near its top (the project skill gives the
-format). Read that line before producing or reviewing any stage. The phase
-changes the review priority; it does not remove a stage. This section is the
-only definition of the phases; the stage sections of
-[Three-Stage Loop](references/three-stage-loop.md) say what each phase
-changes in that stage.
-
-- **Early:** prioritize the claim, the paragraph and figure roles, the logic
-  chain, available or explicitly missing evidence, and contradictions across
-  sections. Treat wording, length, page budget, layout, figure style, and final
-  numbers as later work.
-- **Draft:** prioritize prose that follows the agreed outline, scoped claims
-  with their number and source, defined terms, and transitions. Treat page
-  budget and layout as later work, except flag a gross overrun as low priority.
-- **Submission:** prioritize page budget, layout, figure size, simplification,
-  consistency, citations, and final numbers. Defer restructuring unless a
-  logic defect blocks the submission checks.
-
-Put at most a short `Later` list at the end of a review for findings outside
-the current phase. Such findings are never high priority and never justify
-another round. Do not infer a phase from the prose. If the outline has no
-phase line, ask the author before reviewing.
+Every outline has the section or subsection contract (L0) and, for every
+paragraph, one line with its role, its one-sentence claim, the reviewer
+question it answers, its carried endpoint (`from`), the endpoint it gives the
+next paragraph (`gives`), and its evidence needs. Sentence-level propositions
+(L2) are added when prose is delegated to a separate writer, when the author
+asks, or when a paragraph's internal logic is disputed. A sentence line is a
+proposition, never a topic. Floats get FIG/TAB blocks. Schema, tests, and
+alignment rules: [outline-contract.md](references/outline-contract.md).
 
 ### When the user asks for an outline
 
-Stop after stage 1. The outline, with its figure and table roles, is the
-skeleton of the text. Show it to the user with its open decisions, and
-discuss it. Mark it as a proposal while you discuss it, and as agreed once
-the user approves it. Write no prose until the user agrees. Otherwise,
-stage 1 flows into stage 2.
+Stop after the Outline stage. Show the outline, marked `proposal`, with its
+open decisions, and discuss it. Write no prose until the author agrees; then mark it
+`agreed`. After the discussion, propose settled points that apply beyond this
+text as skill edits with exact wording, applied only after approval: lessons
+about the method go to this skill, lessons about one paper go to that
+project's paper rules.
 
-After the discussion, some settled points will apply beyond this text.
-Propose them as skill edits, with the exact text, and apply them only after
-the user approves:
-- a lesson about the method goes to this skill;
-- a lesson about one paper goes to its project skill.
+## Phase controls the review
 
-### Entering with existing text
+Every section outline records one phase, `Early`, `Draft`, or `Submission`,
+near its top. Read it before producing or reviewing. The phase changes review
+priority; it never removes a stage.
 
-- **Structure in doubt** (a section, or "check the logic chain"): extract a
-  role outline from the existing text and start at stage 1 with it. Use
-  [Logic Chain](references/logic-chain.md).
-- **Prose weak, structure sound:** start at stage 2. Use
-  [Iterative Method](references/iterative-method.md) per paragraph.
-- **Too long or verbose:** start at stage 3.
-- **One paragraph:** run the iterative method on it, plus stage 3.
+- **Early:** the claim, paragraph and float roles, the logic chain, available
+  or explicitly missing evidence, contradictions across sections. Wording,
+  length, budget, layout, figure style, and final numbers are later work.
+- **Draft:** prose that follows the agreed outline, scoped claims with number
+  and source, defined terms, transitions. Budget and layout are later work;
+  flag a gross overrun as low priority.
+- **Submission:** budget, layout, figure size, simplification, consistency,
+  citations, final numbers. Defer restructuring unless a logic defect blocks
+  submission.
 
-## Before stage 1: load context
+End a review with at most a short `Later` list for findings outside the phase;
+they never justify another round. Do not infer the phase from the prose. With
+no outline or phase line, ask when budget or layout matters; otherwise state
+that you assume `Draft`.
 
-1. **Rules.** The repository's writing guide and the user's style rules. A
-   project skill that extends this one names them.
-2. **Terminology lock.** Build or refresh the terminology/concept ledger from
-   the glossary, writing guide, author decisions, and the manuscript before
-   proposing wording. Never write a glossary-banned term. No ledger means no protected-term replacement; extract the
-   established terms or ask the author when the referent is unclear.
-3. **The manuscript.** All of it for an abstract or introduction. Otherwise,
-   the target plus at least one paragraph before and one after.
-4. **Evidence.** Take every number from the manuscript, a figure's data, an
-   evidence note, or code, never from memory, and record its source in the
-   outline. Mark unfinished results as visible placeholders, and never
-   fabricate them.
-5. **Venue norms**, for new sections. A research subagent fetches the call
-   for papers (page limit, abstract rules) and reads 5 to 7 recent, closely
-   related papers from the venue: their abstract length, introduction length
-   and paragraph roles, and how they state headline numbers.
-6. **Model papers by presentation goal**, whenever you lack a good
-   presentation structure: for new text, or when the extracted outline has
-   jumps that reordering does not fix. A research subagent searches
-   top-conference papers that share the *presentation goal*, meaning the
-   same argument shape, not necessarily the same topic. Examples of argument
-   shapes:
-   - two existing designs each fail one requirement, and a workload property
-     lets a new design meet both;
-   - an old idea from another field, adapted where its key assumption breaks.
+## Context: what to load
 
-   It reports how each paper orders its paragraph roles, introduces its
-   insight, positions against the nearest classic idea, and states results
-   and costs. Use these as references for structure, and never copy
-   wording. Record the papers and their role sequences in scratch notes.
-7. **The budget in numbers**, when the phase calls for it: words, and where
-   the section should end on the page.
+1. **Rules.** The project's `AGENTS.md`, writing guide, paper rules, and the
+   user's style rules.
+2. **Glossary and ledger.** `GLOSSARY.md` at the manuscript root, then the
+   ledger per [terminology.md](references/terminology.md).
+3. **Outline.** The project's declared outline location, from its
+   `AGENTS.md`; if none, keep the outline in the conversation or a file the
+   user chooses. A missing outline never blocks work.
+4. **Manuscript.** All of it for an abstract or introduction; otherwise the
+   target plus at least one paragraph before and after, and enough adjacent
+   sections to resolve terms and handoffs.
+5. **Evidence**, with sources for every number.
+6. **Venue norms and model papers** for new sections or when no good structure
+   is evident ([model-paper-patterns.md §1](references/model-paper-patterns.md#1-finding-model-papers-by-presentation-goal)).
+7. **Budget in numbers** when the phase calls for it: words, and where the
+   section should end on the page.
 
-## Reviewer subagents
+## Closed-world gate
 
-- **Brief.** Run reviewers at high effort and read-only. Give each one:
-  - its role, a program-committee member of the venue;
-  - the target outline's current phase, and the "Phase controls the review"
-    rules of this skill;
-  - this skill (`~/.claude/skills/paper-writer/SKILL.md` and
-    `references/reviewer-lens.md`) and the project skill, read from disk at
-    the start, so it reviews against their latest version;
-  - the files to read first;
-  - the author constraints it must not argue against;
-  - the paper's glossary path, to read from disk, and the terminology/concept
-    ledger, with an explicit instruction not to propose unapproved
-    near-synonyms for protected terms or any glossary-banned term;
-  - the stage's report format, with a word limit.
-- **Who reviews.** Keep one reviewer for all rounds of a stage, continuing
-  the same agent. Use a fresh reviewer at the start of each stage, so the
-  stage 2 read is cold.
-- **Verify every finding** in the manuscript, data, or code before applying
-  it: accept, accept in part, or reject, with a one-line reason. Tell the
-  reviewer what you rejected and why.
-- **Reviewers overreach.** Reject a suggested wording that the paper does not
-  support, even if it reads better.
-- **Disagreements.** When rounds or reviewers disagree, decide by evidence.
+Run before handing back any prose. A fresh check (the verifier, or a
+separate pass when no subagent exists) rebuilds the outline from the final
+prose without the plan ([outline-contract.md §8](references/outline-contract.md#8-reverse-outline-round-trip))
+and compares it with the agreed outline: paragraph claims and order, openings
+and the first-sentence summary, relations and handoffs, evidence and scope.
+It also runs the protected-token diff and the banned-term scan from
+[terminology.md](references/terminology.md), and, when Motivation or floats
+are in scope, reruns the design-blind pass ([sections.md §2](references/sections.md#2-motivation-recover-a-design-independent-argument))
+and checks that each float, its caption, and the citing text agree. Any difference that is not
+wording-only is fixed in the stage that owns it, or recorded as an outline
+change the author approves. A fluent draft that fails the gate is not done.
 
-## Non-negotiable rules
-- **Preserve what the paper says.** Keep technical claims, formulas, labels,
-  citations, figure references, and algorithm semantics, unless there is a
-  stated reason to change them. Simplifying never deletes a claim a reviewer
-  needs; repair it instead.
-- **Keep terminology and concept IDs stable.** Define each term before its
-  first use. Protected terms are not eligible for synonym replacement during
-  editing; an explicit author decision is required to add or change an alias.
-- **Scope every claim** to what the evaluation supports. Replace each
-  intensifier with a number, a bound, a figure, or an invariant.
-- **Keep correctness arguments** (invariants, exact checks) separate from
-  **performance arguments** (locality, bounds, measurements).
+## Stop and ask the author when
 
-## Stop and ask the user when
-- A number the text needs has no source.
-- Text looks technically wrong, or a formula contradicts the implementation.
-- An edit would change the claimed contribution, the threat model, or an
-  evaluation conclusion.
-- An edit would replace, rename, or add an alias for a protected term or
-  concept, or the project has no evidence for deciding whether two terms are
-  equivalent.
-- Sources disagree and it is unclear which one is true.
-- A reviewer asks for a baseline or experiment the paper lacks. Keep the
-  claim out of the text and list it as an open decision for the authors.
+- a number the text needs has no source;
+- text looks technically wrong, or a formula contradicts the implementation;
+- an edit would change the contribution, threat model, claim strength, or an
+  evaluation conclusion;
+- an edit would replace, rename, or add an alias for a protected term, or no
+  evidence decides whether two terms are equivalent;
+- sources disagree and it is unclear which is true;
+- a reviewer asks for a baseline or experiment the paper lacks: keep the claim
+  out and list it as an open decision;
+- several supported stories or structures remain and the choice changes the
+  paper's emphasis.
 
 ## Verification and handoff
-- **Checks.** Run `git diff --check`. Scan mechanically for the user's style
-  rules and run the fatal placeholder blocker scan (for example `TODO`, `XX`,
-  `???`, and unfinished fill-ins) across source and rendered output. Confirm
-  that no confirmed or ambiguous candidate remains, and that every label,
-  citation, and figure reference resolves.
-  Check new bibliography entries through `https://doi.org/<doi>` with
-  `Accept: application/x-bibtex`.
-- **Build.** Build the PDF when length or layout matters. Report the errors,
-  the undefined references, the word count, and where the section ends.
+
+- **Checks.** `git diff --check`; a mechanical scan for the user's style
+  rules; every label, citation, and figure reference you touched resolves.
+  Leave fatal blockers (placeholders, unresolved references) to the
+  `paper-hygiene` blocker scan and bibliography and citation checks to
+  `paper-integrity`; run or recommend them before submission.
+- **Build** the PDF when length or layout matters; report errors, undefined
+  references, the word count, and where the section ends.
 - **Where to work.** Multi-step writing goes on its own branch or worktree of
-  the manuscript repository. Commit the finished text there as a backup, and
-  never merge it yourself. Keep the final outline where the project skill
-  says; a project may keep shared outlines that every writer uses. Keep
-  review notes, and outlines that have no such place, in ignored scratch
-  space, and never commit them.
-- **Report:**
-  - where the text is;
-  - its length against the budget, in Draft and Submission;
-  - the final logic chain;
-  - the reviewer's verdict;
-  - the placeholders;
-  - open decisions for the authors;
-  - problems found outside the task's scope, listed but not fixed.
+  the manuscript repository; commit the finished text there as a backup and
+  never merge it yourself. Never stage unrelated changes. Keep review notes
+  and round artifacts in ignored scratch space.
+- **Report:** where the text is; the route and stages run; length against
+  budget (Draft, Submission); the final logic chain; the reviewer's verdict
+  and the gate result (independent or self-checked); outline changes;
+  placeholders; open decisions; problems outside the task's scope, listed but
+  not fixed.
 
-## Extending this skill in a project
+## Project paper rules
 
-A project skill extends this one and holds only project-specific rules:
-- writing guide paths;
-- where outlines live, and their format;
-- style rules;
-- evidence sources;
-- the placeholder macro;
-- build commands and output directories;
-- branch and worktree conventions;
-- venue budget;
-- story constraints for reviewers;
-- concrete lessons from earlier reviews of that paper.
-
-The project skill tells the agent to load this skill first. It never copies
-this skill's generic method.
+A project extends this skill with its own `AGENTS.md` or project skill, holding
+only project specifics: the outline location and format, the glossary,
+writing-guide and style rules, evidence sources, the placeholder macro, build
+commands, branch conventions, venue and budget, story constraints for
+reviewers, and lessons from earlier reviews of that paper. It tells the agent
+to load this skill first and never copies its method.
 
 ## Related skills
-- `systems-evaluation-planner`: the chain from claim to question to figure
-  for an evaluation, before its outline records the figure roles.
-- `paper-review`: staged editorial, consistency, and citation checks of a
-  finished draft.
-- `paper-autoraters`: a before and after quality comparison.
-- `content-refinement-agent`: a peer-review loop over the whole draft.
+
+- `paper-presentation-review`: read-only presentation diagnosis; the brief for
+  the final verifier.
+- `paper-hygiene`: mechanical cleanup of source and rendered PDF, fatal
+  blockers, and making text fit (line fitting, short last lines, float
+  placement). It sends rewrites that need more than deleting a word or phrase
+  back here.
+- `paper-integrity`: citation checks and the submission gate.
+- `paper-review`: reviewer-side work on someone else's paper (developing the
+  user's review, or an independent review).
+- `systems-evaluation-planner`: which experiments and figures an evaluation
+  needs; `systems-paper-plotting`: rendering them.

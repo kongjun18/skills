@@ -1,8 +1,9 @@
 # Reviewer lens: what reviewers want to see, and what they attack
 
-Both the writer and the reviewer subagent use this file. In stage 1, use it
-to choose the roles. In stage 2, use it to check claims. In stage 3, use it
-to decide which sentences carry weight.
+Both the writer and the reviewer subagent use this file. In the Outline
+stage, use it to choose the roles. In the Draft and Refine stages, use it to
+check claims. In the Simplify stage, use it to decide which sentences carry
+weight.
 
 ## What each paragraph must give the reviewer
 

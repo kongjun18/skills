@@ -13,10 +13,10 @@ The two common defects are a weak link between each prior work and the
 paper's own argument, and detail that does not match how close each work is.
 The positioning map below prevents both before any prose exists.
 
-## Stage 1 for Related Work: the positioning map
+## Outline stage for Related Work: the positioning map
 
-For Related Work, stage 1 produces a positioning map instead of a
-sentence-role outline. The map has one row per work, or per coherent group
+For Related Work, the Outline stage produces a positioning map instead of
+the paragraph and sentence outline. The map has one row per work, or per coherent group
 of works:
 
 | Work or group | Relationship | Decisive axis | Shared | Changed, and the consequence | Closeness | Words |
@@ -61,7 +61,7 @@ Then build the section from the map:
   limitation.
 - **List inherited ideas.** The text must acknowledge them.
 
-The stage 1 reviewer checks the map, not wording. Ask it:
+The Outline-stage reviewer checks the map, not wording. Ask it:
 - which rows have no clear relationship;
 - which distinctions rest on names only;
 - whether the closeness ranks and word shares match;
@@ -132,7 +132,7 @@ Model Related Work sections, by the pattern they show:
 - **Wormhole** (EuroSys'19, 5): cache or parallelism optimizations,
   separated from changes in how index-access cost grows.
 
-## Review brief for Related Work (stages 2 and 3)
+## Review brief for Related Work (Draft, Refine, and Simplify stages)
 
 Ask the reviewer to:
 1. **Extract the positioning map from the prose**: relationship, decisive
