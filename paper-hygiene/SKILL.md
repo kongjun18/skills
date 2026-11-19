@@ -37,6 +37,9 @@ Each unit below runs on its own. Running one unit does not mean the others ran.
 4. **Edit source, not the PDF.** If only a PDF is available, run `audit` and
    state the coverage limits. Build products and page renders go to scratch
    space outside the manuscript tree. Preserve unrelated working-tree changes.
+5. **Classify rendered findings before fixing them:** layout-only (fix here),
+   source flow (route to paper-writer), or content (route to the author). Do
+   not rewrite prose only to move a harmless page or column break.
 
 ## Units
 

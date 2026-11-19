@@ -1,6 +1,6 @@
 ---
 name: systems-paper-plotting
-description: Render publication-quality figures for papers and own their styling. Use for any paper figure made from data in Matplotlib (any field) — house style, print-size layout, fonts, export — and for systems evidence figures from an evaluation_plan.yaml and local experiment data — end-to-end comparisons, normalized speedups, performance breakdowns, load-latency curves, CDF/CCDF tails, scalability, ablation, sensitivity, resource time series, tradeoff scatter, heatmaps, with combined and overview outputs, captions, and audits. Also use to audit figures for misleading normalization, statistics, axes, or layout, and to iteratively polish rendered figures with a reviewer subagent ("refine figures", "review and fix figures", "polish figure X"). For deciding which experiments and figures a paper needs, use systems-evaluation-planner; for whether a manuscript needs a figure and where it goes, use paper-presentation-review; for interactive dashboards or web charts, not this skill.
+description: Render publication-quality figures for papers and own their styling. Use for any paper figure made from data in Matplotlib (any field) — house style, print-size layout, fonts, export — and for systems evidence figures from an evaluation_plan.yaml and local experiment data — end-to-end comparisons, normalized speedups, performance breakdowns, load-latency curves, CDF/CCDF tails, scalability, ablation, sensitivity, resource time series, tradeoff scatter, heatmaps, with combined and overview outputs, captions, and audits. Also use to audit figures for misleading normalization, statistics, axes, or layout, and to iteratively polish rendered figures with a reviewer subagent ("refine figures", "review and fix figures", "polish figure X"). For deciding which experiments and figures a paper needs, use systems-evaluation-planner; for whether a manuscript needs a figure and where it goes, use paper-writer; for interactive dashboards or web charts, not this skill.
 ---
 
 # Systems Paper Plotting
@@ -46,7 +46,7 @@ Read [refinement-loop.md](references/refinement-loop.md) for the phases, verdict
 ## Routing
 
 - Which experiments, baselines, and figures a paper needs, and what claims they support: `systems-evaluation-planner`.
-- Whether the manuscript needs a figure, where it goes, and conceptual (non-data) figures: `paper-presentation-review` and its figure workflow.
+- Whether the manuscript needs a figure, where it goes, and conceptual (non-data) figures: `paper-writer` (the outline's FIG/TAB blocks).
 - Figures for slides built from a deck spec: `slide-presentation` places them; produce them here with the `presentation` profile.
 - Results recorded in an exploration report: plot from its `data/derived/`, keeping the report's Data Index as the provenance link.
 
