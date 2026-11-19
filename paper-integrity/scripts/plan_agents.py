@@ -4,7 +4,8 @@ launched at once.
 
   triage   open suspected S0/S1 reference findings from identity.py
            (fast and full); one batch = finding ids
-  claims   cited keys, co-cited keys kept together, balanced by use count
+  claims   cited keys, co-cited keys kept together, balanced by use count;
+           at least 10 uses per agent, so small scopes get fewer agents
   omission manuscript files grouped by top-level section, balanced by sentences
   refute   open S0/S1 findings still needing an independent check
 
@@ -20,6 +21,9 @@ from common import die, read_json
 
 TRIAGE_CATEGORIES = {"not-located", "identifier-unresolved", "dead-link", "venue-mismatch",
                      "author-mismatch", "year-mismatch", "preprint-has-published-version"}
+
+
+MIN_USES_PER_AGENT = 10  # below this, another claims agent costs more than it saves
 
 
 def pack(weighted, n):
@@ -87,8 +91,11 @@ def main():
         groups = {}
         for k in count:
             groups.setdefault(find(k), []).append(k)
-        # A co-citation cluster larger than a fair share is split by key.
-        share = max(1, sum(count.values()) // n)
+        # Small scopes get fewer agents, so co-cited keys stay together. Only a
+        # co-citation cluster larger than a fair share is split by key.
+        total = sum(count.values())
+        n = max(1, min(n, -(-total // MIN_USES_PER_AGENT)))
+        share = max(MIN_USES_PER_AGENT, -(-total // n))
         units = []
         for ks in groups.values():
             w = sum(count[k] for k in ks)

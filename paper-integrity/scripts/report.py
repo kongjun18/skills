@@ -12,6 +12,9 @@ Inputs in --out (all optional except what the level produced):
   decisions.json    author decisions: {id: {status: cleared|fixed|dismissed, note}}
   run.json          level and script stages run (written by run.py)
 
+With --previous DIR, statuses in DIR/report.json and decisions in
+DIR/decisions.json carry forward; decisions in --out override them.
+
 Gate: FAIL if any S0 is open (verified or suspected). PASS only when the
 claim-support, omission, and overlap stages all ran; otherwise NOT CERTIFIED.
 
@@ -65,7 +68,7 @@ def main():
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", required=True)
     ap.add_argument("--paper-dir", required=True)
-    ap.add_argument("--previous", help="earlier run dir; carries statuses forward")
+    ap.add_argument("--previous", help="earlier run dir; carries its statuses and decisions.json forward")
     ap.add_argument("--decisions", help="author decisions file (default: <out>/decisions.json)")
     args = ap.parse_args()
 
@@ -110,6 +113,18 @@ def main():
                 f["status"] = p["status"]
                 f["notes"] += [n for n in p.get("notes", []) if n.startswith(("author", "verifier", "triage"))]
             elif p and p["status"] == "fixed":
+                f["notes"].append("reopened: marked fixed in the previous run but detected again")
+        # Decisions written into the previous run dir after its report count too,
+        # so `--previous <dir>` honours <dir>/decisions.json without a rerun there.
+        prev_decisions = read_json(os.path.join(args.previous, "decisions.json"), {}) or {}
+        for fid, d in prev_decisions.items():
+            f = by_id.get(fid)
+            if not f or f["status"] != "open":
+                continue
+            if d.get("status") in ("cleared", "dismissed"):
+                f["status"] = d["status"]
+                f["notes"].append(f"author: {d.get('note', '')}")
+            elif d.get("status") == "fixed":
                 f["notes"].append("reopened: marked fixed in the previous run but detected again")
     decisions = read_json(args.decisions or os.path.join(args.out, "decisions.json"), {}) or {}
     for fid, d in decisions.items():

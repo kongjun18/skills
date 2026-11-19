@@ -1,238 +1,155 @@
-# Paper Hygiene Workflow and Ledgers
+# Paper Hygiene: Ledgers and Unit Procedures
 
-Read this reference when the paper has multiple source files, a substantial
-number of figures or tables, or findings that cross section boundaries. It
-defines the evidence needed for a safe local edit; it is not a presentation
-rubric.
+Read the section for each unit you run. The rules in
+[SKILL.md](../SKILL.md) and the
+[terminology contract](../../paper-writer/references/terminology.md) apply to
+every unit and are not repeated here.
 
-## Fatal blocker preflight
+## Blockers
 
-Run this audit before every other hygiene unit. Scan included source files,
-captions, tables, appendices, bibliography text, source comments that can leak
-into the artifact, and the rendered PDF. Search case-insensitively for
-standalone markers and macro forms such as `TODO`, `FIXME`, `TBD`, `TBC`, `XXX`,
-`XX`, `???`, `PLACEHOLDER`, `REPLACE`, `INSERT`, `\todo{}`, `\TODO{}`,
-`\fixme{}`, `\placeholder{}`, `<value>`, `<author>`, `待补`, `待定`, and `占位`.
-Use token boundaries and context so intentional content such as `xxHash` is
-not reported as a placeholder. Record ambiguous matches instead of ignoring
-them.
+Search the included sources, captions, tables, appendices, bibliography text,
+source comments that could leak into the output, and the rendered PDF,
+case-insensitively and on token boundaries, for `TODO`, `FIXME`, `TBD`, `TBC`,
+`XXX`, `XX`, `???`, `PLACEHOLDER`, `REPLACE`, `INSERT`, macros such as
+`\todo{}`, `\fixme{}`, `\placeholder{}` or the project's placeholder macro,
+angle-bracket fill-ins such as `<value>`, equivalents in the project's
+language, visible review-colored text, blank result fields, and unfinished
+citations.
 
-Each candidate gets a blocker issue record with the exact marker, source
-locator, PDF page/region when visible, surrounding text, and one of:
+Use context, so an intentional token (`xxHash`) is not reported as a marker.
+Record ambiguous matches; do not skip them. A source comment that records an
+author decision is evidence, not residue.
 
-- `confirmed blocker`: unresolved draft or fill-in text;
-- `intentional content`: documented example or notation, with evidence;
-- `ambiguous`: author clarification required and the release gate remains
-  blocked.
-
-The gate passes only when no confirmed or ambiguous candidate remains. Do not
-invent a result, citation, name, or number to clear a marker. Delete a marker
-only when it is demonstrably accidental and its removal leaves complete prose.
-
-## Baseline commands
-
-Use the paper's own build instructions first. These commands are fallbacks,
-not a required toolchain:
-
-~~~sh
-latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex
-pdfinfo main.pdf
-pdftotext -layout main.pdf baseline.txt
-pdftoppm -png -r 180 main.pdf scratch/page
-~~~
-
-Keep all outputs in scratch space. Record the exact source root, engine,
-options, page count, warning summary, and PDF hash. If the build has known
-baseline warnings, record them separately from regressions.
+For each candidate record the marker, `file:line`, the PDF page when visible,
+the surrounding text, and its class: `confirmed` (unresolved draft or fill-in
+text), `intentional` (documented example or notation, with the evidence), or
+`ambiguous` (needs the author; blocks the release verdict until resolved).
 
 ## Ledgers
 
-Use stable IDs so that findings survive a later edit. A compact ledger can be
-kept in the response, in a user-provided tracker, or in scratch space when no
-repository destination is specified.
+Build only the ledgers the selected units need. Use stable IDs so findings
+survive later edits.
 
-### Heading tree
-
-| ID | Level | Heading | Source | Label | Included by | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-
-Check for duplicate labels, an empty heading with no intended content, an
-include that is never reached, a missing file referenced by input or include,
-and a heading that appears twice because an old copy was restored. Do not
-infer a missing conceptual section from the heading tree alone.
-
-### Paragraph inventory
-
-| ID | Source | Section | Opening | Local role | Key object/evidence | Tail words |
-| --- | --- | --- | --- | --- | --- | --- |
-
-For semantic duplicate candidates, add:
-
-| Candidate pair | Proposition | Scope | Evidence | Role | Decision |
-| --- | --- | --- | --- | --- | --- |
-
-Use same accidental unit only when proposition, scope, evidence, and reader
-role all match. If one occurrence is a summary and the other is a detailed
-explanation, they are not automatically duplicates. If both are required but
-the repetition is too large, defer to presentation revision.
-
-### Terminology ledger
-
-| Concept ID | Canonical surface form | Definition/referent | Allowed forms or aliases | Forbidden/suspicious variants | Layer/scope | Evidence |
-| --- | --- | --- | --- | --- | --- | --- |
-
-An evidence entry can be a definition in the paper, a notation table, an
-author-provided guide, or a repeated unambiguous usage. A frequency count,
-dictionary similarity, shorter line, or reviewer suggestion is not evidence
-that two terms are interchangeable. A canonical surface form is protected;
-only explicitly listed grammatical forms or aliases are allowed. For example,
-do not change `routing-point rematerialization` to `routing-point rebuild`
-without an explicit author decision and a ledger update. Mark a change as safe
-only when the concept ID, referent, operation/state role, and canonical form
-remain unchanged.
-
-### Artifact and float map
-
-| ID | Kind | Label | Source | First use | Owner section/subsection | Rendered page(s) | Panel/caption status | Order |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-
-Use it to verify that a local label fix did not change a figure/table/equation
-identity and that a layout fix did not reorder floats. Record the source
-environment's placement option and the neighboring heading or paragraph for
-every float.
+| Ledger | Columns | Used by |
+| --- | --- | --- |
+| Heading tree | ID, level, heading, source, label, included by | `structure`, `references` |
+| Paragraph inventory | ID, source, section, opening, local role, key object or evidence | `duplicates` |
+| Terminology ledger | As defined in the terminology contract | every editing unit |
+| Artifact and float map | ID, kind, label, source, placement option, first use, owning subsection, rendered pages, caption status, order | `references`, `floats`, `whitespace` |
 
 ## Issue record
 
-Use one record per independent repair:
-
-~~~text
-ID: H-###
-Class: blockers | mechanics | duplicate | section-artifact | terminology
-      | reference | layout | short-tail
-Severity: major | minor | polish
-Status: applied | retained | deferred | needs-context | needs-revision
-Location: source path:line or PDF page/region
-Evidence: smallest useful excerpt, competing terms, or before/after render
-Action: exact local change or reason for deferral
-Invariant: claim/number/object/edge/ordering/layout/protected-token/concept-ID property preserved
+```text
+ID: H-###     Unit: <unit>     Severity: S0 | S1 | S2
+Status: applied | deferred | needs-context | needs-revision | retained
+Location: path:line and/or PDF page/region (both sides for inconsistencies)
+Evidence: smallest useful excerpt, competing values, or before/after render
+Action: exact local change, or reason for deferral and the skill to route to
+Invariant: the claim, number, object, order, or protected term preserved
 Verification: command, page render, or ledger check
-~~~
+```
 
-Major means the local defect changes the apparent object, scope, or
-interpretation. Minor means it causes a concrete local reading or navigation
-problem. Polish means a clear mechanical or visual defect with little effect
-on meaning. Every `blockers` issue is at least `major` and remains
-`needs-revision` until removed or explicitly classified as intentional by the
-author. These are cleanup priorities, not scientific scores.
+## Mechanics and references
 
-## Mechanical audit details
+Read each changed sentence together with its neighbors. A shorter
+near-synonym is not an "unmistakable" word-choice error. For a
+cross-reference, check both the source key and the rendered target. Pointing
+a reference at a different figure because the story flows better is a
+presentation decision, not a hygiene fix.
 
-Read each changed sentence with its preceding and following sentence. Correct
-agreement, punctuation, spelling, article use, and an unmistakable local
-word-choice error outside protected terminology. Preserve the paper's
-established English variant, technical capitalization, and canonical surface
-forms; a shorter near-synonym is not an unmistakable error.
+## Duplicates
 
-For cross-references, check both the source key and the rendered target. A
-reference to the wrong but existing figure is a terminology/navigation defect;
-choosing a different figure because it makes the story flow better is a
-presentation decision.
+Two passages are one accidental unit only when their proposition, scope,
+evidence, and reader role all match. A summary and the detailed explanation it
+summarizes are not duplicates. When both are required but the repetition is
+too large, defer to paper-presentation-review.
 
-Treat comments, TODOs, draft markers, duplicate labels, and accidentally
-uncommented archival text as blocker candidates first. A comment that contains
-an author decision is not disposable evidence; classify it as intentional only
-with that evidence and record the classification in the blockers ledger.
+## Consistency (read-only)
 
-## Figure and table placement audit
+Check three things. **Numbers:** reported values, ranges, rankings, workload
+counts, and stated result scope agree across abstract, introduction,
+evaluation, conclusion, captions, tables, and available data. **Units and
+comparisons:** units and denominators are explicit (bits vs bytes, GB vs GiB,
+per-node vs aggregate, absolute vs relative, percent vs percentage points), and
+each comparison's baseline, ratio direction, and normalization are
+identifiable; flag an ambiguous "2× faster". **Evaluation reporting:** for each
+result a reader can find the workload, configuration, measurement scope,
+aggregation (mean, median, percentile), error-bar meaning, and repetition
+count, locally or through a clear reference.
 
-Run this as its own `floats` unit. For each artifact, compare source order,
-first textual use, owning section/subsection, and rendered page order. Inspect
-the final-size render for clipped panel titles, cropped axes, hidden legends,
-detached captions, and table headers that fall outside the page or box.
+The procedure:
+1. Before calling two values a conflict, match workload, hardware,
+   configuration, baseline, metric, units, aggregation, and version.
+   Different settings may legitimately give different values.
+2. Where artifacts allow, trace the value: raw data → selection and
+   aggregation in plotting code → plotted value or table cell → evaluation
+   prose → summaries elsewhere. Recompute simple arithmetic. For example,
+   10 ms → 5 ms is a 50% reduction and a 2× speedup, not a 100% reduction.
+3. The evaluation usually wins over a summary, but verify it against its
+   artifacts first: prose, data, and figures can each be stale. If provenance
+   is missing, show the competing values and mark the finding
+   `needs-context`. Never silently pick a value or read exact numbers off a
+   plot.
+4. Keep qualifiers such as "up to", "on average", and workload restrictions in
+   any suggested wording. Report missing reporting details; do not demand new
+   experiments.
 
-The following are placement defects that can receive local repairs when the
-paper's existing float policy makes the intended location clear:
+## Floats
 
-- a float appears before the paragraph that introduces it without an explicit
-  figure-led design;
-- a float splits a paragraph or sits between a subsection heading and its
-  opening paragraph;
-- a float owned by one subsection crosses into the next subsection or appears
-  under an unrelated heading;
-- a figure is pushed beyond the page containing its introducing result even
-  though a top/bottom placement or a boundary move would keep the relationship;
-  or
-- a panel title is clipped because of the image bounding box, `trim`/`clip`, a
-  subcaption width, or a page edge.
+For each float, compare source order, first textual use, owning subsection,
+and rendered page, and inspect the render at final size. Local placement
+defects: a float before its introducing paragraph (unless the paper is
+deliberately figure-led); a float splitting a paragraph or sitting between a
+heading and its opening paragraph; a float crossing into another subsection; a
+float pushed past the page of its introducing result when it could stay; and a
+panel title, axis, legend, or table header clipped by the image box,
+`trim`/`clip`, a subcaption width, or the page edge.
 
-Repair the smallest local cause: use a permitted `[t]`, `[b]`, or `[tbp]`
-option, move the environment to a paragraph boundary, repair the panel box, or
-add a local `\FloatBarrier` at a genuine section boundary. Use `\afterpage`
-or `\clearpage` only when the template already permits them and lighter
-repairs fail. Do not use global `[H]` placement or shrink a figure below
-readable print size to conceal clipping.
+Repair the smallest cause: a permitted `[t]`, `[b]`, or `[tbp]` option, a
+move to a paragraph boundary, a fixed panel box, or a local `\FloatBarrier` at
+a real section boundary. Use `\afterpage` or `\clearpage` only if the template allows them and lighter
+fixes fail. Never use global `[H]`, and never shrink a figure below readable
+print size to hide clipping. Re-render the page and its neighbors afterwards.
+The caption must stay attached, no heading or opening paragraph may be
+stranded, and the float must stay in its owning scope.
 
-Before accepting a repair, render the affected page and its neighbors. Confirm
-that the float remains attached to its caption, the opening paragraph is not
-stranded, the next heading is not left alone, source and rendered order are
-accounted for, and no new overfull box or large blank region appears.
+## Whitespace
 
-## Rendered whitespace audit
+Classify each gap first: caption gap (`\abovecaptionskip`,
+`\belowcaptionskip`), text/float gap (`\textfloatsep`, `\intextsep`,
+`\floatsep`, or the `dbl` variants), widow or orphan (template-permitted
+penalties), deferred float, template stretch, or intentional break. Check the
+class file before changing a parameter, and use the smallest change.
+Values like `5pt plus 2pt minus 2pt` are starting candidates, not defaults.
+Never change float order, captions, sizes, margins, or fonts to hide a gap,
+and never use negative vertical space first. Whitespace work changes no words
+and moves no floats: report those as `tails` or `floats` findings.
 
-Inspect the baseline page and the corresponding final page together. Mark the
-cause and the smallest safe parameter before editing:
+## Tails
 
-1. Caption gap: abovecaptionskip or belowcaptionskip.
-2. Text/float gap: textfloatsep, intextsep, or floatsep.
-3. Double-column float gap: dbltextfloatsep or dblfloatsep.
-4. Widow/orphan: local reflow, or the template's permitted widow/club
-   penalties.
-5. Deferred float: leave it alone unless the existing placement policy
-   authorizes a local change.
+`pdftotext -layout` finds candidate pages. Confirm each candidate in the
+source and visually, ignoring headings, captions, equations, lists, and
+bibliography entries.
 
-After the change, check the entire page, not only the gap: headings must not be
-stranded, captions must stay with their objects, columns must remain balanced,
-and the next page must not acquire a new bad break. Do not use negative
-vertical space as a first response.
-
-## Short-tail audit
-
-pdftotext -layout is a locator, not a semantic parser. Use it to find
-candidate pages, then identify the paragraph in the source and confirm the
-line visually. Count words after removing only layout whitespace; do not count
-equation tokens or a citation-only marker as prose words.
-
-Safe candidates usually include a repeated adjective, an optional discourse
-adverb, or a redundant phrase already stated in the same sentence. Prefer
-deletion-only edits to unprotected wording. Never replace a protected term.
-The terminology ledger authorizes only the exact canonical form or an
-explicitly listed alias; a token's presence in the ledger is not permission to
-swap one canonical term for another. For unprotected wording, a replacement is
-allowed only when the sentence contract keeps exactly the same objects,
-relations, scope, qualifiers, modality, tense, evidence bindings, and
-terminology IDs. Never introduce a new compound, nominalization, abbreviation,
-synonym, or technical term while shortening. For example, changing `tokens
-matched by exact matching` to `exact-match token` is prohibited because it
-creates a new term and changes the visible concept form.
-
-Do not delete a qualifier (only, at least, up to), condition, metric/unit,
-technical noun, citation, or causal connector merely to gain a line. If the
-candidate requires moving a sentence, changing paragraph boundaries, or
-rewriting a transition, defer it. If exact semantic correspondence cannot be
-verified, retain the original sentence and report the tail to the user.
+Per iteration, delete at most one dispensable unprotected word or phrase: a
+repeated modifier, a phrase the sentence already states, or an optional
+discourse adverb. Prefer deletion to replacement. A replacement is allowed only for unprotected
+words, and only when the objects, relations, scope, qualifiers, modality,
+tense, evidence, and terms are identical before and after. Never introduce a
+new compound, nominalization, abbreviation, or synonym while shortening. Never
+delete a qualifier, condition, unit, technical noun, citation, or causal
+connector to gain a line. If exact equivalence cannot be shown, keep the tail
+and report it. The edit counts only if the final render shows the line saved
+with no new widow, overflow, or bad break.
 
 ## Final gate
 
-The pass is complete only when all of these are true:
-
-- every applied issue has a source location and a verification record;
-- protected tokens and canonical terms are unchanged except for approved local
-  normalization;
-- heading tree, paragraph roles, artifact identities, and float order are
-  unchanged;
+The pass is complete only when all of these hold:
+- every applied issue has a location and a verification record;
+- protected tokens are unchanged, except for approved alias normalization:
+  numbers, units, symbols, citations, labels, canonical terms, and qualifiers;
+- the heading tree, paragraph roles, artifact identities, and float order are
+  unchanged unless a float repair intended the change;
 - the final PDF has no new unresolved references, overfull boxes, clipping,
   collisions, or detached captions;
-- each accepted tail change is visible in the final render and has an exact
-  before/after sentence-contract match; and
-- every unresolved case is listed with a reason and the workflow that should
-  handle it next.
+- every unresolved case is listed with its reason and its next owner.

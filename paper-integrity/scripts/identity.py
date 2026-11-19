@@ -149,6 +149,37 @@ def search_title(http, title, first_author, year=None):
     return best, best_sim, tried
 
 
+VENUE_FILLER = {"proc", "proceedings", "conference", "conf", "symposium", "symp", "workshop",
+                "international", "annual", "usenix", "acm", "ieee", "the", "of", "on", "in"}
+
+
+def abbrev_of(abbr, words):
+    """True if abbr spells word prefixes of words in order, skipping words:
+    "fast" ~ "file and storage technologies", "eurosys" ~ "european ...
+    computer systems", "vldb" ~ "very large data bases"."""
+    def go(i, j):
+        if i == len(abbr):
+            return True
+        for k in range(j, len(words)):
+            w = words[k]
+            for p in range(min(len(w), len(abbr) - i), 0, -1):
+                if w[:p] == abbr[i:i + p] and go(i + p, k + 1):
+                    return True
+        return False
+    return go(0, 0)
+
+
+def acronym_matches(a, b):
+    """A short all-letter token of either venue abbreviates the other venue."""
+    for x, y in ((a, b), (b, a)):
+        words = y.split()
+        for t in x.split():
+            if t.isalpha() and 3 <= len(t) <= 10 and t not in VENUE_FILLER and t not in words \
+                    and len(words) >= 2 and abbrev_of(t, words):
+                return True
+    return False
+
+
 def venue_matches(bib_venue, record_venues):
     a = norm_title(bib_venue)
     if not a:
@@ -161,6 +192,8 @@ def venue_matches(bib_venue, record_venues):
         if a in b or b in a or title_sim(a, b) >= 0.6:
             return True
         if acr(b) and (acr(b) in a.replace(" ", "") or a.replace(" ", "") in acr(b)):
+            return True
+        if acronym_matches(a, b):
             return True
         # "Proceedings of the 29th Symposium on ..." vs. "Symposium on ..."
         sig = lambda s: {w for w in s.split() if len(w) > 3 and not w.isdigit()}
@@ -320,7 +353,7 @@ def check_entry(http, key, e, loc):
                 "Cite the published version unless the claim depends on preprint-only content.")
     elif bib_venue and published and not venue_matches(bib_venue, published):
         add("S1", "suspected", "venue-mismatch",
-            f"Entry venue \"{bib_venue}\" ({year}) is not among the record venues: "
+            f"Entry venue \"{bib_venue}\"{f' ({year})' if year else ''} is not among the record venues: "
             f"{', '.join(sorted({v['venue'] for v in published}))}.",
             "Confirm where and when the cited version appeared and fix the entry.")
     return out, fs

@@ -1,4 +1,4 @@
 interface:
   display_name: "Paper Hygiene"
-  short_description: "Gate fatal placeholders and clean paper safely"
-  default_prompt: "Use $paper-hygiene to run the mandatory fatal placeholder preflight and an independent paper hygiene check, including figure and table placement, on this source and rendered PDF."
+  short_description: "Mechanical cleanup of paper source and PDF"
+  default_prompt: "Use $paper-hygiene to scan this paper for placeholders and run the requested cleanup units (typos, references, floats, whitespace, short tails, number consistency) on the source and rendered PDF."

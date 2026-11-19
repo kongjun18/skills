@@ -1,6 +1,6 @@
 ---
 name: paper-integrity
-description: Pre-submission integrity gate for academic papers, starting with citations. Checks whether cited works exist and match their entries (DOI, arXiv, metadata, retraction, preprint vs published), whether each citation supports the sentence it backs, whether borrowed systems, datasets, or methods go uncited, and whether text is copied from sources. Ranks issues S0 (blocker, must fix), S1 (major), S2 (minor), reports a PASS / NOT CERTIFIED / FAIL gate, and ends with a results table. Asks at launch for the level (offline, fast, full); fast and full fan out concurrent subagents to explore citations. Use for "check citations", "citation audit", "integrity check", "is this safe to submit", "find fabricated or wrong references", or before any submission. Reports only; does not edit the manuscript.
+description: Report-only pre-submission integrity gate for academic papers, currently covering citations. Checks that cited works exist and match their entries (DOI, arXiv, metadata, retraction, preprint vs published), that each citation supports its sentence, that borrowed systems, datasets, or methods are cited, and that text is not copied from sources. Ranks issues S0 (blocker), S1 (major), S2 (minor), reports a PASS / NOT CERTIFIED / FAIL gate with a results table, and asks at launch for the level (offline, fast, full; fast and full fan out concurrent subagents). Use for "check citations", "citation audit", "integrity check", "is this safe to submit", "find fabricated or wrong references". Does not edit the manuscript. For placeholders, typos, cross-references, layout, and number consistency, use paper-hygiene; for argument and presentation, use paper-presentation-review.
 ---
 
 # Paper Integrity
@@ -126,7 +126,7 @@ up with `--previous $OUT`. Do not restate rows the table already shows.
 
 ## Toolbox
 
-Other skills (for example `paper-review`) may call these directly.
+Other skills may call these directly; `run.py --level offline` is the cheap citation sanity check.
 
 | Script | Stage | Does | Writes in `OUT` |
 | --- | --- | --- | --- |
@@ -152,5 +152,8 @@ Script order matters: `ledger` before `mechanical`, `mechanical` before
   service such as iThenticate.
 - Claim support depends on source access. `no-access` uses stay open as S1
   until a PDF is supplied.
+- Venue matching accepts an acronym that spells word prefixes of the record
+  venue's name, but not one built otherwise (for example from a sponsoring
+  group's name); triage agents clear those `venue-mismatch` findings.
 - The sentence splitter is approximate. Agents must open the `.tex` location
   when the clause in the ledger is unclear.

@@ -123,7 +123,16 @@ def main():
         f = e["fields"]
         loc = f"{e['file']}:{e['line']}"
         missing = [x for x in ("title", "author") if not f.get(x) and not (x == "author" and f.get("editor"))]
-        if missing:
+        has_locator = bool(f.get("url") or f.get("doi")
+                           or "http" in f.get("howpublished", "") + f.get("note", ""))
+        if missing == ["author"] and e["type"] in ("misc", "online", "manual") and has_locator:
+            # Project pages, manuals, and software often have no personal author.
+            findings.append(finding(
+                "M", "S2", "verified", "missing-field", f"{k}|author", loc,
+                f"`{k}` ({e['type']}) has no author; acceptable for a web, software, or manual "
+                "reference if the style renders the title and URL.",
+                "Add an organization as author if the style needs one.", k))
+        elif missing:
             findings.append(finding(
                 "M", "S1", "verified", "missing-field", f"{k}|{'|'.join(missing)}", loc,
                 f"`{k}` has no {' or '.join(missing)}; the rendered reference is incomplete.",

@@ -44,7 +44,7 @@ not listed, choose the tier by the meaning above and say why in the evidence.
 | `venue-mismatch` | 2 | S1 | Suspected; venue names vary. |
 | `dead-link` | 2 | S1 | Suspected; some sites block scripts. |
 | `undefined-citation`, `missing-entry`, `unresolved-marker`, `duplicate-key` | 1 | S1 | Visible in the PDF, or it may render the wrong work. |
-| `missing-field` (title or author) | 1 | S1 | |
+| `missing-field` (title or author) | 1 | S1 | S2 for a `misc`, `online`, or `manual` entry that has a URL or DOI and lacks only the author. |
 | `missing-field` (year), `no-locator`, `bibtex-warning`, `duplicate-work`, `title-differs` | 1–2 | S2 | |
 
 ## Confidence
