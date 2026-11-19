@@ -11,7 +11,9 @@ Lint:
   - over-stating words (warnings): absolutes such as must, never, always, cannot, only, exactly;
     review each hit and rewrite or keep it deliberately;
   - internal-looking strings (warnings): file paths and file names.
-Render: LibreOffice headless -> OUTDIR/<deck>.pdf -> OUTDIR/slide-NN.png (pdftoppm). Look at every PNG.
+Render: LibreOffice headless -> OUTDIR/<deck>.pdf -> OUTDIR/slide-<N>.png (pdftoppm numbers pages from 1 and
+zero-pads N to the width of the page count: slide-1.png for a 9-slide deck, slide-01.png for 10-99). Look at every PNG.
+Requires python-pptx (run through uv as above), LibreOffice (soffice) and pdftoppm (poppler) for --render.
 
 Exit status: 1 if a banned term is found or rendering fails, else 0.
 """

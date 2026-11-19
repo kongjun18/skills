@@ -4,6 +4,7 @@
 The spec format is defined in references/spec-format.md; assets/deck-spec-template.md is a buildable example.
 Wording changes go into the spec first, then rebuild; never hand-edit the generated text in the .pptx.
 
+Requires python-pptx (not in the standard library); uv fetches it per run, so nothing is installed globally.
 Run (from anywhere):
   uv run --no-project --with python-pptx python <skill>/scripts/build_deck.py SPEC.md \
       [--out DECK.pptx] [--template T.pptx] [--check] [--final] [--strict] [--outline]
@@ -11,7 +12,8 @@ Run (from anywhere):
   --check    parse, validate and estimate layout only; write nothing
   --final    every slide must be agreed and every warning becomes an error
   --strict   warnings become errors
-  --outline  print the slide table (number, part, title, status, minutes)
+  --outline  print the slide table (number, part, title, status, minutes), then validate like --check;
+             writes nothing
   --verify D compare an existing deck D with the spec (detects hand edits or a stale build); no build
 
 Exit status: 0 = built (warnings may be printed), 1 = errors.
@@ -1152,6 +1154,7 @@ def main(argv=None):
     if a.outline:
         print(outline(spec))
     out = (a.out or default_out(spec)).resolve()
+    dry_run = a.check or a.outline   # validate and lay out in memory; write nothing
     if a.verify and not issues.errors:
         verify(a.verify.resolve(), spec, issues)
     elif not issues.errors:
@@ -1171,7 +1174,7 @@ def main(argv=None):
             else:
                 sl = build_content(cx, s, spec, issues, not a.final)
             sl.notes_slide.notes_text_frame.text = notes_text(s, clock)
-        if not a.check:
+        if not dry_run:
             out.parent.mkdir(parents=True, exist_ok=True)
             prs.save(str(out))
             verify(out, spec, issues)
@@ -1184,10 +1187,10 @@ def main(argv=None):
                f"open {counts['open']}); {len(issues.errors)} errors, {len(issues.warnings)} warnings")
     failed = bool(issues.errors) or ((a.strict or a.final) and bool(issues.warnings))
     if failed:
-        wrote = " (deck written; fix before handing over)" if out.exists() and not (a.check or a.verify) else ""
+        wrote = " (deck written; fix before handing over)" if out.exists() and not (dry_run or a.verify) else ""
         print(f"FAILED: {summary}{wrote}", file=sys.stderr)
         return 1
-    done = f"{a.verify} matches the spec" if a.verify else ("checked" if a.check else f"wrote {out}")
+    done = f"{a.verify} matches the spec" if a.verify else ("checked" if dry_run else f"wrote {out}")
     print(f"{done}: {summary}")
     return 0
 

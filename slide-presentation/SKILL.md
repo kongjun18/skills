@@ -24,7 +24,7 @@ goal and audience → storyline → deck spec (per slide) + sources index → bu
 2. **Deck spec.** Copy [assets/deck-spec-template.md](assets/deck-spec-template.md) to `<deck>_spec.md`. Per slide: Part, Status, Title (the heading), Claim, On the slide, Figure, Transition, Notes, Sources. Format: [spec-format.md](references/spec-format.md). Start lean.
 3. **Review in batches.** Discuss a few slides at a time. Mark each `agreed`, `proposed` or `open` with the date and the reason for changes. Never build an `open` slide as final.
 4. **Sources index.** Trace every number and quoted claim to its origin in `<deck>_sources.md` ([template](assets/sources-template.md)); verify against the source itself, not memory.
-5. **Build** with [scripts/build_deck.py](scripts/build_deck.py): it validates the spec, lays out the fixed grid on the template, writes the deck, and re-reads it to confirm every field landed unchanged.
+5. **Build** with [scripts/build_deck.py](scripts/build_deck.py): it validates the spec, lays out the fixed grid on the template, writes the deck, and re-reads it to confirm every field landed unchanged. Both scripts need `python-pptx`; run them as `uv run --no-project --with python-pptx python <skill>/scripts/...` so nothing is installed globally. Rendering also needs LibreOffice and `pdftoppm`.
 6. **Render and lint** with [scripts/qa_deck.py](scripts/qa_deck.py), then open every PNG. Commands and the visual checklist: [build-and-qa.md](references/build-and-qa.md).
 7. **User review.** Hand over the deck, the open/proposed slides, the lint hits you kept and why. Feedback goes into the spec, then rebuild. Record style feedback in the project override (see [customization.md](references/customization.md#recording-feedback)).
 
