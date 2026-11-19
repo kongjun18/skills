@@ -2,44 +2,60 @@
 
 ## Layout
 
-- `skills/`: maintained skills, one directory per skill.
-- `third-party/`: upstream source repositories and their original skill layouts.
-- Each maintained skill starts at `skills/<name>/SKILL.md`.
-- Keep optional skill resources in `agents/`, `assets/`, `references/`, or `scripts/` inside that skill.
+- `<name>/SKILL.md`: one maintained skill per top-level directory; the directory name matches the frontmatter `name`.
+- Optional skill resources live inside the skill in `agents/`, `assets/`, `references/`, or `scripts/`.
+- `third-party/`: gitignored clones of upstream skill repositories; pinned in [third-party/SOURCES.md](third-party/SOURCES.md).
+- `tools/`: repository tooling (`check.py`, `install.sh`).
 
 ## Maintained Skills
 
-- `address-pr-comments`: fetch and triage GitHub PR review feedback.
-- `exploration-report`: agent-run explorations recorded as reproducible in-repo reports (TL;DR, checklist scorecard, findings, caveats, anomalies, analysis, data index, reproduce steps) with a structural linter.
-- `git`: local Git conventions, starting with worktrees under the repository's `.worktree/`.
+Working discipline:
+
 - `good-agent`: general engineering and research work discipline.
-- `high-signal-writing`: concise, reader-first agent responses.
-- `paper-presentation`: orchestrator for paper presentation review, guided paragraph generation, structural revision, and verification; delegates to the review and revise skills.
-- `paper-presentation-review`: read-only presentation review (argument structure, terminology, section responsibility, figures) with located findings.
-- `paper-presentation-revise`: presentation-preserving prose and structure revision that addresses review findings.
-- `paper-integrity`: pre-submission integrity gate, starting with citations (existence, metadata, claim support, omissions, copied text); S0/S1/S2 tiers, offline/fast/full levels chosen at launch, stdlib scripts plus concurrent subagents, results table.
-- `paper-review`: staged systems/database paper-review framework; editorial and citation checks implemented, deeper review stages reserved.
-- `paper-review-report`: develop and verify an evidence-grounded conference review from the reviewer’s notes.
-- `paper-hygiene`: source and rendered-PDF cleanup for mechanical defects, terminology drift, accidental duplication, float whitespace, and short paragraph tails.
-- `paper-writer`: paper prose refinement (refine -> rethink -> refine, logic chain) and outline-first drafting with reviewer subagents.
-- `rebase-restack`: recoverable Git rebase and Graphite restack workflow.
+- `high-signal-writing`: concise, reader-first conversational responses (not artifacts).
 - `repo-memory`: repository-local knowledge and closeout protocol.
-- `systems-evaluation-planner`: systems-paper claim and evaluation planning.
-- `systems-paper-plotting`: auditable systems-paper figure production.
-- `slide-presentation`: spec-first slide decks (storyline → per-slide Markdown spec → pptx builder → render and lint), with case profiles (research group talk, project sync meeting) and project overrides.
 
-## Conventions
+Git and code review:
 
-- Match each skill directory name to the `name` in its frontmatter.
-- Use valid YAML frontmatter and keep trigger guidance in `description`.
-- Link every bundled reference directly from `SKILL.md` using relative paths.
-- Do not commit UUID-suffixed export names, duplicate export trees, or wrapper index pages.
-- Preserve third-party layouts and provenance; make only minimal compatibility fixes unless a broader update is requested.
+- `git`: local Git conventions — worktrees under `.worktree/`, and safe rebase / Graphite restack with backups and a restore doc.
+- `address-pr-comments`: fetch and triage GitHub PR review feedback into a living review doc.
+
+Research:
+
+- `exploration-report`: agent-run explorations recorded as reproducible in-repo reports with a structural linter.
+- `systems-evaluation-planner`: systems-paper claim and evaluation planning (`evaluation_plan.yaml`).
+- `systems-paper-plotting`: auditable systems-paper figure production from the plan.
+- `system-research-scout`: evidence-bound survey of recent systems-conference papers into research ideas.
+- `pull-recent-papers`: weekly arXiv digest and research radar.
+
+Papers and talks:
+
+- `paper-writer`: single entry point for writing paper text — outline, draft, rebuild from old material, refine, simplify; owns the shared terminology contract.
+- `paper-presentation-review`: read-only presentation diagnosis and independent verification of revisions.
+- `paper-hygiene`: meaning-preserving mechanical cleanup of source and rendered PDF.
+- `paper-integrity`: report-only pre-submission gate, starting with citations.
+- `paper-review`: reviewer-side work on someone else's paper — develop the user's review, or run an independent review.
+- `slide-presentation`: spec-first slide decks (storyline → Markdown deck spec → pptx builder → render and lint).
+
+## Skill Design Rules
+
+Every agent that adds or edits a skill follows these rules.
+
+1. **One owner per request type.** The `description` is a trigger contract: what the skill owns, with trigger phrases, and what it routes elsewhere ("for X, use Y"). Before adding or broadening a trigger, grep the other descriptions for collisions and resolve them.
+2. **SKILL.md is the core, not the manual.** Keep it to about 300 lines or fewer: purpose, non-negotiables, workflow, routing, done criteria. Put detail in `references/`, each linked from SKILL.md with the condition for reading it. Never require loading every reference up front; a typical request should load well under 1,000 lines.
+3. **State each rule once.** Other places link to it instead of restating it. A contract shared by several skills lives in one owner skill's `references/`, and the others link to `../<owner>/references/<file>.md`.
+4. **Generic skills carry no project specifics.** No project vocabulary, repository paths, venues, author names, or one-paper examples. Those belong in the project's own `AGENTS.md` or project skill. Examples use neutral placeholders.
+5. **Generalize episode fixes.** When a failure motivates a new rule, write the general rule once in its home section, with at most one short example. Do not append the same patch to several files.
+6. **Few modes, one vocabulary.** Keep modes and stages few, give them one naming scheme, and use one schema per artifact.
+7. **Everything claimed exists and works.** Referenced scripts ship with the skill and run; validators fail on empty or unfilled input; linked files resolve.
+8. **Skills hold definitions only.** Run outputs, caches, corpora, personal config, and other teams' repositories live outside this repository. A skill writes its outputs to the user's working repository or a user-chosen directory, never into this one.
+9. **Preserve third-party provenance.** Keep upstream layouts intact, make only minimal compatibility fixes, and pin each upstream in `third-party/SOURCES.md`.
 
 ## Validation
 
-- Run the skill-creator `quick_validate.py` validator against every directory containing `SKILL.md`.
-- Check that relative Markdown links resolve and that maintained skills have no references to missing bundled files.
+- Run `python3 tools/check.py` before handoff. It validates frontmatter, relative links, SKILL.md length, and the install symlinks.
+- Run the skill-creator `quick_validate.py` against every changed skill directory when it is available.
+- After adding, renaming, or removing a skill, run `tools/install.sh` to refresh the symlinks in `~/.claude/skills` and `~/.codex/skills`.
 - Inspect `git diff` and `git status` before handoff; preserve unrelated user changes.
 
 ## Repository Memory

@@ -48,6 +48,8 @@ Do exactly what was asked — no less, no more.
 
 - No unrequested abstractions, generalization, drive-by refactors, or "while I'm here" cleanup (YAGNI). They bloat the diff and add bugs to untouched code.
 - Spotted a real problem out of scope? Report it as a finding — don't silently fix it, don't ignore it.
+- In code, write the minimum that solves the problem: no speculative configurability, no error handling for impossible cases. If 200 lines could be 50, rewrite it.
+- Touch only what the task needs and match the surrounding style; don't reformat or "improve" adjacent code.
 
 ## 6. Commit deliverables cleanly.
 
@@ -70,3 +72,4 @@ Any task larger than one atomic unit goes on its own branch, never the main line
 Before handing back, delete scratch scripts, debug prints, temp files, and dead experiments.
 
 - The debris of reaching a solution isn't the solution; leftovers confuse review and sometimes ship. Leave the tree fit to be reviewed.
+- Remove the imports, variables, and functions your own change orphaned; leave pre-existing dead code alone unless asked (report it instead).
