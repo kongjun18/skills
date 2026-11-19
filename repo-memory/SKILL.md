@@ -1,537 +1,143 @@
 ---
 name: repo-memory
-description: Mandatory repo-local memory protocol for repository work. Use before the first repo write and before reporting completion, especially for long-running tasks, Git worktrees, parallel agents, specifications, status, progress, decisions, conflicts, and durable knowledge.
+description: Owns repository-local project memory - durable knowledge notes, epic index/status.md/progress.md files, recorded decisions, spec-versus-code conformance conflicts, stale or conflicting notes, and the end-of-task memory closeout. Applies to every task inside a repository; the per-task part is cheap (read before writing, a three-question closeout). Triggers include record this finding, write down the decision, where should this knowledge go, start or continue an epic, update the epic status or progress file, consolidate or compact notes, notes contradict the code, memory closeout, knowledge across parallel worktrees. For exploration write-ups (benchmarks, feasibility studies) use exploration-report; for conversational replies, status or progress updates in chat, and handoffs use high-signal-writing.
 ---
 
-# Repo Memory Steward
+# Repo Memory
 
-## Purpose
+Durable, non-obvious project knowledge lives in the repository, so later sessions and parallel agents read it instead of rediscovering it. This skill decides what is worth keeping, where it goes, and how each topic stays one current, trustworthy view.
 
-Keep repository knowledge reusable by any agent, readable by humans, consistent with the code revision it describes, and small enough to review.
+## When It Applies
 
-Apply this skill to every task performed inside a repository.
+Every task inside a repository. The mandatory part is small: the [Begin](#begin) step, and the [Closeout](#closeout) questions, which for a small task end in one line of the reply. Read a reference only when its trigger in [References](#references) fires.
 
-A task MAY produce no memory changes, but it MUST still run closeout and record a reason for the no-op.
+## Non-Negotiables
 
-## Non-Negotiable Rules
-
-1. Accepted specifications describe what the system should do.
-2. Code, tests, configuration, migrations, and reproducible evidence describe what the current revision does.
-3. Notes preserve useful knowledge but are not automatically authoritative.
-4. A specification/implementation mismatch is an explicit conformance conflict.
-5. Facts, hypotheses, proposals, accepted decisions, conflicts, and stale claims MUST be distinguishable.
-6. Important stale knowledge MUST be invalidated, expired, or superseded rather than silently deleted.
-7. Durable descriptive knowledge MUST follow the branch and revision it describes.
-8. An agent MUST modify only its current worktree.
-9. Every completed task MUST run a scoped, idempotent memory closeout.
-10. The user MUST be able to review both the repo delta and the memory delta.
-11. One topic MUST have exactly one current note. Correct it in place; never add a note that corrects or supersedes another.
+1. **One topic, one current note.** Correct a note in place. Never add a note that corrects, supersedes, or comments on another. See [One Current View](#one-current-view).
+2. **Intended and observed behavior stay separate.** See [Authority](#authority).
+3. **Knowledge status is visible.** A reader can tell verified facts, observations, inferences, hypotheses, proposals, accepted decisions, conflicts, and open questions apart. Never present a guess as a fact or a proposal as accepted.
+4. **Stale knowledge is handled, not dropped.** Important stale claims are marked invalid, expired, or superseded in the note that carries them, not silently deleted.
+5. **Knowledge follows the revision it describes.** Descriptive knowledge lives on the branch whose code it describes, and an agent writes only inside its own worktree.
+6. **No ad hoc memory files.** No `NOTES.md`, `TODO.md`, `scratch.md`, `plan.md`, `progress-*.md`, or task summaries unless the repository defines that path as canonical. Classify content before writing; never create a temporary Markdown file in the repo to sort out later.
+7. **Built-in agent memory is a cache.** Vendor or session memory may hold preferences, pointers, and unverified candidates. It is never authoritative and never the only home of a specification, decision, constraint, or reusable finding.
+8. **The memory delta is reviewable on its own.** See [Commit Policy](#commit-policy).
 
 ## Authority
 
-Keep intended behavior separate from observed behavior.
+**Intended behavior.** The current explicit user or maintainer instruction governs the task. An accepted specification says what the system should do. An accepted decision records an authorized choice and may constrain later work. A proposal, draft, note, or agent memory is not accepted because an agent wrote it: an agent may propose a specification or decision, but must not mark it accepted without user or maintainer authority.
 
-### Intended behavior
+**Observed behavior.** Code, tests, configuration, migrations, logs, experiments, and reproducible runtime evidence say what a particular revision does. When they disagree with each other, investigate rather than assume one always wins.
 
-- Current explicit user or maintainer instruction has the highest authority for the task.
-- An accepted specification is authoritative for what the system should do.
-- An accepted decision explains an authorized choice and may constrain later work.
-- A proposal, draft, note, or agent memory is not accepted merely because an agent wrote it.
+**Notes** are not automatically authoritative. A descriptive claim in a note is a dated, re-checkable observation; a decision or requirement recorded in a note carries only the authority it is labeled with (proposed, or accepted by whom).
 
-An agent MAY propose a specification or decision. It MUST NOT mark it accepted without the required user or maintainer authority.
+**Conformance conflict.** When implementation and specification disagree, record expected behavior, observed behavior, the relevant specification, the evidence, and the open choice (change the implementation or change the specification). Do not silently rewrite either side. Other conflicts: [lifecycle-and-conflicts.md](references/lifecycle-and-conflicts.md).
 
-### Observed behavior
+## Where Things Go
 
-Use code, tests, configs, migrations, logs, experiments, and reproducible runtime evidence to determine what a particular revision actually does. Investigate disagreements among these sources instead of assuming one is always correct.
-
-Built-in or external agent memory is never authoritative.
-
-### Conformance conflict
-
-When implementation and specification disagree, record:
-
-- expected behavior;
-- observed behavior;
-- the relevant specification;
-- supporting evidence;
-- the unresolved choice: change implementation or change specification.
-
-Do not silently rewrite either side.
-
-## Log-and-View Model
-
-Use a lightweight log-centric model:
-
-- Git history is the complete file-change log.
-- A note's `Current View` is the normal read path for current knowledge.
-- A note's `Semantic History` records only important changes in understanding.
-- `status.md`, `progress.md`, and indexes are compact views, not raw logs.
-- A closeout summary or tooling receipt records what the agent did; it is not durable project knowledge.
-
-Do not maintain two independently authoritative versions of the same claim. `Current View` is current; `Semantic History` explains important invalidations, supersessions, accepted decisions, and resolutions. It MUST NOT duplicate ordinary Git history.
-
-## Canonical Layout
-
-Use the repository's established structure when one exists. Otherwise prefer:
+Use the repository's established layout when it has one, including an existing epic `notes/` directory, ADR folder, or specs location; do not migrate it. Otherwise use:
 
 ```
-AGENTS.md
-CLAUDE.md
-docs/
-  specs/
-  knowledge/
-  epics/
-    index.md
-    <epic-slug>/
-      index.md
-      status.md
-      progress.md
-      notes/
-        000-<short-title>.md
-        001-<short-title>.md
-      archive/
+AGENTS.md                         root index: commands, links, memory rules
+CLAUDE.md                         @AGENTS.md, plus Claude-only additions
+docs/specs/                       accepted specifications, labeled drafts
+docs/knowledge/                   repo-level knowledge useful across epics
+docs/epics/index.md               list of epics
+docs/epics/<slug>/index.md        stable entry point
+docs/epics/<slug>/status.md       current state
+docs/epics/<slug>/progress.md     milestones
+docs/epics/<slug>/knowledge/NNN-<topic>.md   one durable topic per note
+docs/epics/<slug>/archive/        inactive material
 ```
 
-Only create directories that are needed.
-
-- `AGENTS.md`: root index and mandatory workflow.
-- `CLAUDE.md`: imports `AGENTS.md`; only Claude-specific additions belong here.
-- `docs/specs/`: accepted specifications and clearly labeled drafts.
-- `docs/knowledge/`: durable knowledge useful across epics.
-- epic `index.md`: stable entry point.
-- epic `status.md`: current working state.
-- epic `progress.md`: concise milestone history.
-- epic `notes/`: atomic durable knowledge.
-- epic `archive/`: inactive material retained for context.
-
-`archive/` is a location, not a semantic status. Archived content should already say whether it is superseded, expired, invalid, completed, or otherwise inactive.
-
-## Root Files
-
-### `AGENTS.md`
-
-Treat `AGENTS.md` as the repository memory root. Keep it short and navigational. It SHOULD include:
-
-- project overview links;
-- build, test, lint, and development commands;
-- links to specifications and durable knowledge;
-- active epic links;
-- the mandatory memory workflow;
-- rules for where durable knowledge belongs.
-
-Prefer links over long explanations. Do not turn it into a knowledge dump.
-
-### `CLAUDE.md`
-
-When Claude Code is used, prefer:
-
-```markdown
-@AGENTS.md
-```
-
-Add only truly Claude-specific rules. Do not duplicate the repository memory system.
-
-### Built-in agent memory
-
-Treat vendor-specific memory as a local cache or candidate inbox. It MAY contain local preferences, shortcuts, pointers, and unverified candidates. It MUST NOT be the only location of an accepted specification, decision, constraint, or reusable finding.
-
-## Epics
-
-An epic is work that spans multiple tasks, commits, investigations, sessions, modules, or parallel workers and benefits from persistent status and knowledge.
-
-Do not create an epic for every small change. For a small one-turn task, usually write no memory unless it produces durable non-obvious knowledge.
-
-When long-running work has no epic, create and index the smallest useful scaffold before writing epic memory.
-
-### Epic `index.md`
-
-The stable entry point. It answers:
-
-- what the epic is and why it exists;
-- its goal and scope;
-- where status and progress live;
-- which modules matter;
-- which notes are important.
-
-Keep it stable. Link to notes instead of copying their contents.
-
-### Epic `status.md`
-
-The current working state. It answers:
-
-- where are we now;
-- what is the current focus;
-- what is blocked;
-- which questions remain open;
-- what should happen next.
-
-Keep it short. Replace stale state rather than accumulating history.
-
-### Epic `progress.md`
-
-The human-readable milestone view. Record meaningful completed work, major direction changes, blocker changes, and links to important notes.
-
-Do not record every command, agent turn, or debugging action. Compact older entries into milestones when the file becomes hard to scan.
-
-## Mandatory Write Routing
-
-Classify content before writing it:
-
-- Raw reasoning, temporary plans, command output, and debugging residue: chat, terminal, `/tmp`, or ignored scratch space.
-- Current epic state, focus, blockers, and next steps: `status.md`.
-- Meaningful milestones: `progress.md`.
-- Durable finding, constraint, hypothesis, decision, conflict, or open question: the existing atomic note on that topic, or a new one when no note covers it.
-- Accepted requirement: canonical specification location.
-- Knowledge useful beyond one epic: indexed repo-level knowledge.
-- Navigation and workflow: `AGENTS.md` or an index.
-- Agent activity review: closeout output or a tooling-generated receipt, not a knowledge note.
-
-Do not create ad hoc root or feature files such as `NOTES.md`, `TODO.md`, `scratch.md`, `plan.md`, `progress-*.md`, or task summaries unless the repository explicitly defines them as canonical.
-
-If the correct destination is unclear, keep the content outside durable repo docs until it is classified.
-
-## Atomic Notes
-
-A note is durable knowledge about one stable topic. It is not a task transcript or scratchpad.
-
-### Numbering and naming
-
-Each epic has an independent sequence:
-
-- Start at `000` in every epic.
-- Increase monotonically within that epic.
-- Never reuse an ID, including archived or deleted IDs.
-- Different epics MAY each contain `000`, `001`, and the same later IDs.
-- IDs only need to be unique within one epic.
-- Use `<ID>-<short-kebab-title>.md`.
-- Keep one stable topic per note. A topic may hold many findings; one finding per note is fragmentation, not atomicity.
-
-Inspect active and archived notes before choosing the next ID.
-
-Parallel branches from the same epic revision may choose the same next ID. Resolve that mechanical collision during merge by renumbering one new note. An ID collision is not itself a semantic conflict.
-
-### Search before writing
-
-Before creating a note, specification, ADR, or repo-level document, search active knowledge:
-
-```bash
-rg "keyword|related term" AGENTS.md CLAUDE.md docs --glob '!**/archive/**'
-```
-
-Fallback:
-
-```bash
-grep -R "keyword" AGENTS.md CLAUDE.md docs --exclude-dir=archive
-```
-
-Use search to avoid duplicates, find related specifications and decisions, update an existing topic, detect stale claims, and choose the correct destination. Search archives only when investigating history or regressions.
-
-When the search finds a note on the same topic, update that note. A new note requires that the content be a genuinely different topic, not merely a different task, subtask, session, or occasion.
-
-### Recommended shape
-
-```markdown
-# Topic
-
-## Current View
-
-Current facts, constraints, decisions, conflicts, and open questions.
-
-## Evidence
-
-Relevant code, tests, configs, migrations, commits, issues,
-experiments, logs, or user confirmation.
-
-## Semantic History
-
-Only important invalidations, expirations, supersessions,
-accepted or reversed decisions, resolutions, and scope changes.
-```
-
-The exact headings are optional. The current conclusion MUST be easy to find. Facts MUST NOT be confused with guesses, and proposals MUST NOT be confused with accepted decisions.
-
-Do not require frontmatter or a complex schema unless tooling needs it. Human readability is the default.
-
-### Evidence
-
-For important claims, preserve enough context to recheck them, such as code paths, tests, configs, migrations, commands, commits, issues, experiments, logs, or explicit user confirmation.
-
-Do not copy large raw logs into notes. Link or summarize the relevant evidence.
-
-### Prefer merging over fragmenting
-
-A complex task with several subtasks is not several topics. Finishing such a task MUST NOT produce one note per subtask sitting flat beside each other.
-
-Default to a single note covering the whole topic, with the subtask results as sections inside it. One note that a reader enters once beats several notes that must be assembled mentally.
-
-Split into separate notes only when a part is long enough to hurt readability, or will be updated on its own schedule independently of the rest. When that happens, the parts belong under an epic directory with an `index.md` that shows the whole shape of the work, not flat siblings.
-
-Choose the container before writing the second note. Do not write flat siblings and plan to organize them later.
-
-If you are already writing a second note on work covered by an existing one, resolve it now rather than deferring: merge into the existing note, or create the epic scaffold and move both inside it.
-
-Consolidation trigger: when two or more notes in one location cover the same topic, merge them into one note, or move them under an epic with an index when the split is justified above. Leaving them flat and cross-linked does not resolve the scatter.
-
-[`scripts/lint_notes.py`](scripts/lint_notes.py) reports the mechanically detectable forms of scatter: notes that only point at other notes, near-duplicate titles in one directory, and flat piles without an index.
-
-```bash
-python3 scripts/lint_notes.py docs
-```
-
-It exits non-zero when it finds something. It cannot tell whether two differently named notes cover the same topic, so a clean run means no obvious scatter, not good structure.
-
-### Correcting a note
-
-Supersession is an edit, not an append.
-
-When new knowledge contradicts or refines an existing note on the same topic, update that note in place: replace the dead claim in `Current View`, and append one line to `Semantic History`.
-
-Do not create a note whose purpose is to correct another note. A correction split across two files scatters one topic and forces every later reader to reconstruct the current truth.
-
-A new note is justified only when the new knowledge is a genuinely different topic that happens to invalidate part of an old one. Even then, edit the old note: remove the dead claim from its `Current View` and link the new note.
+Create only what the work needs. An epic is for work that spans multiple tasks, sessions, or parallel workers; a one-turn task usually writes no memory at all.
+
+| Content | Destination |
+|---|---|
+| Raw reasoning, temporary plans, command output, debugging residue | Chat, terminal, `/tmp`, or ignored scratch space |
+| Current epic state, focus, blockers, next steps | `status.md`, replacing stale state |
+| Meaningful milestone or direction change | `progress.md` |
+| Durable finding, constraint, hypothesis, decision, conflict, open question | The existing note on that topic; a new note only when no note covers the topic |
+| Accepted requirement | The specification |
+| Knowledge useful beyond one epic | `docs/knowledge/`, indexed |
+| Navigation, commands, workflow rules | `AGENTS.md` or an index |
+| What the agent did this session | The reply or commit message, not a note |
+| Exploration write-up with data | A report, via `exploration-report` |
+
+When the destination is unclear, keep the content out of durable repository docs (in chat, `/tmp`, or ignored scratch space) until it is classified.
+
+## One Current View
 
 Apply this test before every write:
 
-> After this write, can a reader get the current truth on this topic by reading exactly one `Current View`?
+> After this write, can a reader get the current truth on this topic from exactly one `Current View`?
 
-If not, the write scatters information. Merge instead.
+If not, the write scatters the topic; merge instead. In practice:
 
-A `Semantic History` entry is one line by default: what changed, why, and the evidence.
+- **Same topic exists:** edit that note. Replace the dead claim in its `Current View` and add one `Semantic History` line saying what changed, why, and the evidence.
+- **Several subtasks are one topic:** one note with a section per subtask, not one note per subtask, task, or session.
+- **Split only for size or cadence:** when a part is long enough to hurt readability or changes on its own schedule. The parts then sit under an epic whose `index.md` shows the whole. Choose that container before writing the second note.
+- **Two notes on one topic already:** merge them now, or move them under an epic with an index. Flat siblings that cross-link do not resolve the scatter.
+- **A new topic invalidates part of an old note:** write the new note, and also remove the dead claim from the old note's `Current View` with a link to the new one.
 
-```markdown
-- 2026-09-12: "cache layer is write-back" invalidated — it is write-through
-  (`src/cache.c:220`); earlier measurement came from a branch that never landed.
-```
+Note shape, numbering, decisions, and promotion: [epic-layout.md](references/epic-layout.md).
 
-Preserve the original reasoning at greater length only when the mistake itself is instructive, such as a recurring trap or a reverted change that will otherwise be reattempted.
+## Begin
 
-## Decisions
+Before starting work:
 
-A decision is an authorized choice among meaningful alternatives that constrains later work.
+1. Read `AGENTS.md`, `CLAUDE.md`, and any memory rules they link. Note the worktree and branch you are on; the [Commit Policy](#commit-policy) depends on it.
+2. If the task belongs to an epic, read its `index.md` and `status.md`. If the work will span sessions and has no epic, create one ([epic-layout.md](references/epic-layout.md#epics)). Read the accepted specifications the task touches.
+3. Search the active knowledge for the task's topic, excluding archives, so you work from what is already known and later update the right note:
+   ```bash
+   rg -i "term|synonym" AGENTS.md CLAUDE.md docs --glob '!**/archive/**'
+   # fallback: grep -Rin "term" AGENTS.md CLAUDE.md docs --exclude-dir=archive
+   ```
+   Search archives only when investigating history or a regression.
+4. If the repository provides `memoryctl begin` or an equivalent hook, run it before the first repository write.
 
-A useful decision states:
+Read the smallest relevant current view; do not load every note.
 
-- the question or alternatives;
-- the chosen outcome;
-- whether it is proposed or accepted;
-- who or what authority accepted it;
-- the rationale;
-- its scope and consequences;
-- a revisit condition when useful.
+## Closeout
 
-Record a local epic decision in the relevant topic note by default.
+Before reporting completion, answer three questions:
 
-Promote it to an ADR or dedicated decision record only when it is long-lived, cross-cutting, expensive to reverse, formally reviewed, or likely to outlive the epic.
+1. **Did anything durable and non-obvious change?** A finding, constraint, decision or proposal, labeled hypothesis worth keeping, invalidated claim, conflict, open question, or epic state. Not what the code or diff already shows, trivial local details, private reasoning, or debugging residue.
+2. **Which existing note owns it?** Update that note. Create a note only for a genuinely new topic, and link it from its index.
+3. **Is anything now stale?** A claim the work contradicted, a status that is no longer current, a link that broke.
 
-When an accepted decision changes an accepted requirement, update the specification after authorization. Do not leave two divergent current truths.
+Then:
 
-## Knowledge Lifecycle
+- **Small task, nothing to record:** one line in the reply, such as `memory: no durable knowledge (typo fix)`. Write no file.
+- **Small task with a finding:** edit the owning note and say so in one line, such as `memory: updated <path> (cache is write-through, not write-back)`. Name any claim you invalidated and any proposal that needs the user's approval.
+- **Epic work, edits to status, progress, specifications, or several notes, or a conflict that needs authority:** run the full closeout in [closeout-and-validation.md](references/closeout-and-validation.md), including the linter and the review summary.
 
-Use these meanings for a note or individual claim:
+If the repository provides `memoryctl closeout` and `memoryctl verify` or equivalent hooks, run them for every task, small ones included. Never create a note only to show that closeout ran.
 
-- `active`: currently usable in its stated scope;
-- `disputed`: credible claims or evidence conflict and resolution is pending;
-- `superseded`: replaced by newer knowledge or a newer decision;
-- `expired`: formerly valid, but only for an older revision, version, or context;
-- `invalid`: disproved, mistaken, or unsupported from the start.
+## Commit Policy
 
-When knowledge becomes stale:
+Unless the repository or the user says otherwise:
 
-1. classify it correctly;
-2. remove the inactive claim from the current conclusion;
-3. record why it changed and cite evidence;
-4. write the replacement claim into the same note; link a separate note only when the replacement is a different topic;
-5. update active files that depended on it;
-6. archive only when it is no longer needed for active navigation.
+- **In a repository with no docs or memory convention** (shared or company repositories, coauthored papers), on any branch: leave memory changes unstaged and list them for the user.
+- **On the main line:** the same; leave them unstaged and list them.
+- **On an epic branch, or a task branch under one** (work isolated per `good-agent` §7): commit memory changes with the work, as separate commits whose subject starts with `memory:`, so the user can review, edit, or drop them independently of code commits. Do not mix memory and code in one commit. The user's merge or squash of the epic is the review gate.
 
-Staleness is normally handled by editing the note that carries the claim. See [Correcting a note](#correcting-a-note).
+Unstaged memory does not reach other worktrees and is lost if the worktree is removed; say so when handing back.
 
-Do not silently delete important context. Do not keep contradictory old and new claims together in `Current View` unless they are explicitly marked disputed.
+## References
 
-## Conflict Handling
+| Read | When |
+|---|---|
+| [epic-layout.md](references/epic-layout.md) | Creating or editing an epic, its `index.md`/`status.md`/`progress.md`, a knowledge note, a decision, repo-level knowledge, or `AGENTS.md`/`CLAUDE.md` |
+| [lifecycle-and-conflicts.md](references/lifecycle-and-conflicts.md) | Knowledge became stale, sources or notes disagree, a specification and the code disagree, or parallel edits to one topic need reconciling |
+| [closeout-and-validation.md](references/closeout-and-validation.md) | Closeout for epic work, broader consolidation, validation, the review summary, or wiring memory hooks or CI |
+| [worktrees-and-branches.md](references/worktrees-and-branches.md) | Using several worktrees, coordinating parallel branches, merging branch-local notes, or abandoning a worktree |
 
-Do not use last-write-wins for semantic conflicts.
+[`scripts/lint_knowledge.py`](scripts/lint_knowledge.py) checks numbered notes (`NNN-<topic>.md`) wherever they sit, which covers epic `knowledge/`, legacy `notes/`, `docs/knowledge/`, and stray piles, plus relative links in every scanned Markdown file; the full closeout runs it.
 
-- Same claim and scope: consolidate duplicates.
-- Overlapping claims: merge into one clearer current view.
-- Different scopes or versions: state each scope explicitly.
-- Old claim was wrong: mark invalid.
-- Old claim was once true: mark expired.
-- New knowledge or choice replaced it: mark superseded.
-- Evidence remains inconclusive: mark disputed.
-- Specification differs from implementation: record a conformance conflict.
+## Done
 
-Every outcome above is recorded by editing the note that already owns the topic, not by adding a note that comments on it.
-
-If resolution requires user or maintainer authority, preserve the conflict and list it in closeout instead of inventing a decision.
-
-## Cross-Epic Promotion
-
-Promote knowledge when it is useful beyond the current epic, such as architecture behavior, domain rules, test or deployment practices, recurring failures, long-term constraints, or accepted cross-cutting decisions.
-
-When promoting:
-
-1. update the canonical repo-level document;
-2. abstract away temporary epic detail;
-3. update the relevant index;
-4. link the epic note and repo-level document when useful;
-5. avoid maintaining two divergent copies of the same current claim.
-
-The repo-level document becomes the shared current view. The epic note keeps local evidence and context.
-
-## Worktrees and Branches
-
-Read [Worktrees and Branches](references/worktrees-and-branches.md) before using multiple worktrees, coordinating parallel branches, merging branch-local notes, or abandoning a worktree.
-
-Always write only inside the current worktree and keep descriptive knowledge on the branch containing the revision it describes.
-
-## Required Workflow
-
-### Begin
-
-Before the first repo write:
-
-1. Read `AGENTS.md` and repo-specific instructions.
-2. Identify the current worktree, branch, task, and relevant epic.
-3. Read the epic `index.md` and `status.md`, when present.
-4. Read relevant accepted specifications.
-5. Search active notes and repo-level knowledge, excluding archives.
-6. Create an epic scaffold only when the work is truly long-running.
-7. If the repo provides `memoryctl begin` or an equivalent hook, run it.
-
-Read the smallest relevant current view first. Do not load every note by default.
-
-### During work
-
-- Keep scratch and raw operational logs outside durable docs.
-- Preserve evidence paths for important claims.
-- Do not publish hypotheses as facts.
-- Update an existing topic instead of creating a task-specific duplicate.
-- Keep branch-local implementation knowledge on its branch.
-
-### Closeout
-
-Every completed task MUST run this scoped, idempotent pipeline:
-
-1. **Inspect the delta:** code, tests, configs, migrations, and docs.
-2. **Extract semantic changes:** findings, decisions, invalidations, conflicts, constraints, and questions.
-3. **Classify:** normative or descriptive; verified or unverified; local, epic-wide, or cross-epic.
-4. **Search and reconcile:** update existing knowledge, remove duplication, and expose unresolved conflicts.
-5. **Publish the smallest correct memory delta:** notes, specs, status, progress, and indexes. Most closeouts edit existing notes and add none.
-6. **Compact the touched scope:** remove inactive claims from current views and archive only when appropriate.
-7. **Validate:** structure, links, authority, branch consistency, and stale claims. Run [`scripts/lint_notes.py`](scripts/lint_notes.py) over the touched scope.
-8. **Report:** summarize the repo delta and memory delta separately.
-9. If provided, run `memoryctl closeout` and `memoryctl verify` or equivalent commands.
-
-A closeout MAY be a no-op when no durable, non-obvious knowledge changed or existing memory already describes the result. State the concrete reason. Do not create a note merely to prove closeout ran.
-
-## Consolidation and Compaction
-
-Every task performs scoped closeout. Do not reorganize the entire knowledge tree after every task.
-
-Run broader consolidation when:
-
-- an epic is merged, completed, paused, or changes direction;
-- progress or indexes become hard to scan;
-- notes contain repeated or overlapping claims;
-- conflicts accumulate;
-- inactive material dominates active knowledge;
-- a user or maintainer requests it.
-
-Broader consolidation may reconcile conflicts, deprecate stale claims, merge redundant notes, split mixed topics, promote cross-epic knowledge, compact progress, and improve the touched epic's structure.
-
-Preserve stable links when practical. Avoid broad filesystem churn without clear benefit.
-
-## Validation
-
-Before reporting completion, verify the touched scope:
-
-- relevant active knowledge was searched;
-- note IDs are unique and monotonic within each epic;
-- important links resolve;
-- archived files are not indexed as current truth;
-- inactive claims are absent from unlabeled current views;
-- accepted decisions and specifications have appropriate authority;
-- proposals remain labeled as proposals;
-- conformance conflicts remain explicit;
-- descriptive notes match the branch revision they describe;
-- status is current rather than historical;
-- progress contains milestones rather than raw activity;
-- promoted knowledge is indexed;
-- closeout produced a real memory delta or a justified no-op.
-
-## Human Review
-
-At closeout, present:
-
-```
-Code changes
-Validation and tests
-Memory changes
-Invalidated, expired, or superseded knowledge
-Conflicts and open questions
-Proposals requiring approval
-No-op reason, when no memory changed
-```
-
-Separate evidence from interpretation. Git diff, tests, hooks, or a tooling-generated receipt show what the agent did. Notes preserve reusable understanding.
-
-## Enforcement
-
-A skill defines policy and procedure. It is not by itself a deterministic enforcement boundary.
-
-Repos that require hard enforcement SHOULD provide shared commands, hooks, or CI, for example:
-
-```
-memoryctl begin
-memoryctl closeout
-memoryctl verify
-```
-
-When such a mechanism exists:
-
-- `begin` MUST run before the first repo write;
-- `closeout` MUST run after the final intended change;
-- `verify` MUST pass before reporting completion;
-- any later repo change invalidates the previous verification;
-- hooks or CI SHOULD reject missing or stale closeout state.
-
-Put bootstrap enforcement in repo or organization configuration, not only inside this skill. Otherwise an agent that never activates the skill can bypass skill-local hooks.
-
-A minimal `AGENTS.md` rule is:
-
-```markdown
-Before the first repository write, use the repo-memory skill and run the
-memory begin step. Before reporting completion, run scoped closeout and
-verification. A justified no-op is valid; skipping closeout is not.
-```
-
-Enforce observable outcomes, not claims about an agent's private reasoning.
-
-## Minimalism
-
-Record durable non-obvious knowledge, accepted requirements and decisions, important constraints, validated findings, useful labeled hypotheses, unresolved material conflicts, current state, and meaningful milestones.
-
-Do not record private reasoning, raw transcripts, noisy debugging output, temporary chatter, trivial local details, unsupported guesses as facts, duplicate current knowledge, one new note per task, one new note per subtask, or a note whose purpose is to correct another note.
-
-The goal is the smallest trustworthy memory that prevents rediscovery and misalignment.
-
-## Completion Checklist
-
-- [ ]  Repo and epic instructions were read.
-- [ ]  Active knowledge was searched before creating new knowledge.
-- [ ]  Intended and observed behavior were kept separate.
-- [ ]  Durable findings were routed to the correct canonical location.
-- [ ]  Facts, hypotheses, proposals, decisions, conflicts, and questions are distinguishable.
-- [ ]  Stale claims were invalidated, expired, or superseded in place.
-- [ ]  Each topic has exactly one `Current View`; corrections edited the existing note rather than adding one.
-- [ ]  Notes remain consistent with the current branch revision.
-- [ ]  Note numbering starts at `000` and is monotonic within each epic.
-- [ ]  `status.md`, `progress.md`, and indexes contain only their intended views.
-- [ ]  Cross-epic knowledge was promoted and indexed when appropriate.
-- [ ]  Scoped closeout ran and validation passed, or a justified no-op was recorded.
-- [ ]  The user can review both the repo delta and memory delta.
-
-## One-Sentence Summary
-
-Use `AGENTS.md` as the root index; accepted specifications for intended behavior; branch-consistent atomic notes for durable knowledge; `Current View` for what is usable now; `Semantic History` for important changes; Git for publication across worktrees; and mandatory scoped closeout plus verification before completion.
+- `AGENTS.md` (and the epic, when relevant) was read, and existing knowledge was searched before any knowledge write.
+- Every write passes the one-current-view test, and no ad hoc memory file was created.
+- Knowledge status is visible, and stale claims were handled in place.
+- Closeout was answered: one line for a small task, the full closeout for epic work.
+- Memory changes are in `memory:` commits on an epic branch, or left unstaged and reported.

@@ -56,7 +56,7 @@ Do exactly what was asked — no less, no more.
 Commit each atomic deliverable (a feature, a fix, a paper version) as a milestone, autonomously.
 
 - Commit deliverables only — code, and any paper/report the user asked for.
-- Don't commit auxiliary docs (summaries, unrequested design docs, `CHANGES.md`, knowledge notes); leave them unstaged for the user to decide.
+- Don't commit auxiliary docs (summaries, unrequested design docs, `CHANGES.md`); leave them unstaged for the user to decide. Knowledge notes and other repo-memory files follow `repo-memory`'s commit policy.
 - Never blind-stage: no `git add -A`, no `git commit -a`. Stage deliverable paths explicitly, or you'll sweep in the very files you must withhold.
 
 ## 7. Isolate complex work on a branch.
