@@ -54,10 +54,18 @@ def frontmatter(text: str) -> dict[str, str] | None:
     if end < 0:
         return None
     fields: dict[str, str] = {}
+    key = None
     for line in text[4:end].splitlines():
         m = re.match(r"^([A-Za-z_-]+):\s*(.*)$", line)
         if m:
-            fields[m.group(1)] = m.group(2).strip().strip('"').strip("'")
+            key, value = m.group(1), m.group(2).strip()
+            if re.fullmatch(r"[>|][+-]?", value):  # YAML block scalar: value on indented lines
+                fields[key] = ""
+            else:
+                fields[key] = value.strip('"').strip("'")
+                key = None
+        elif key and line.startswith((" ", "\t")):
+            fields[key] = (fields[key] + " " + line.strip()).strip()
     return fields
 
 

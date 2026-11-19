@@ -1,6 +1,6 @@
 ---
 name: paper-writer
-description: Write and improve academic (systems/database) paper text as a skeptical coauthor. Owns outlining, drafting, rebuilding a section from an old draft, refining, rewriting, polishing, tightening, simplifying, fixing transitions, checking or repairing the logic chain, and autonomous or multi-agent section rewrites; owns the terminology contract shared by all paper skills. TRIGGER on "outline", "write", "draft", "rewrite", "refine", "polish", "tighten", "simplify", "fix transitions", "check the logic chain", or "logic jumps" for paper text. For a read-only presentation review or verifying a revision, use paper-presentation-review; typos, mechanical cleanup, making text fit, floats, or short last lines, use paper-hygiene; citations or the submission gate, use paper-integrity; reviewing someone else's paper, use paper-review; planning experiments or figures, use systems-evaluation-planner; rendering plots, use systems-paper-plotting.
+description: Write and improve academic paper text as a skeptical coauthor. Owns outlining, drafting, rebuilding a section from an old draft, refining, rewriting, polishing, tightening, simplifying, fixing transitions, checking or repairing the logic chain, and autonomous multi-agent rewrites; owns the terminology contract shared by all paper skills. TRIGGER on "outline", "write", "draft", "rewrite", "refine", "polish", "tighten", "simplify", "cut to the page or word budget", "fix transitions", "check the logic chain", or "logic jumps" for paper text, including outlining Evaluation from an evaluation plan. For a read-only presentation review or verifying a revision, use paper-presentation-review; typos, mechanical cleanup, floats, whitespace, or short last lines, use paper-hygiene; citations or the submission gate, use paper-integrity; reviewing someone else's paper, use paper-review; deciding which experiments and figures the evidence needs, use systems-evaluation-planner; rendering plots, use systems-paper-plotting.
 ---
 
 # Paper Writer
@@ -209,9 +209,9 @@ to load this skill first and never copies its method.
 - `paper-presentation-review`: read-only presentation diagnosis; the brief for
   the final verifier.
 - `paper-hygiene`: mechanical cleanup of source and rendered PDF, fatal
-  blockers, and making text fit (line fitting, short last lines, float
-  placement). It sends rewrites that need more than deleting a word or phrase
-  back here.
+  blockers, and line-level fitting (short last lines, float placement,
+  whitespace). Cutting prose to a page or word budget is the Simplify stage
+  here; hygiene sends rewrites beyond deleting a word or phrase back here.
 - `paper-integrity`: citation checks and the submission gate.
 - `paper-review`: reviewer-side work on someone else's paper (developing the
   user's review, or an independent review).
