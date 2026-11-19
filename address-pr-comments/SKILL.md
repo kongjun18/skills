@@ -1,6 +1,6 @@
 ---
 name: address-pr-comments
-description: "Fetch all review comments on a GitHub PR, investigate each thread against the current code, and write the classification (address / investigate / fixed / skip / deferred), proposed fix, risk, and open questions to temp/PR_PR_ID_REVIEW.md, which then serves as the living progress tracker and final report. No code changes until the user asks. Triggers: address PR comments, respond to PR review, handle review feedback, work through PR comments, triage review threads."
+description: "Fetch all review comments on a GitHub PR with the bundled script, investigate each thread against the current code, and write the classification (address / investigate / fixed / skip / deferred), proposed fix, risk, and open questions to temp/PR_{number}_REVIEW.md, which then serves as the living progress tracker and final report. No code changes until the user asks. Triggers: address PR comments, respond to PR review, handle review feedback, work through PR comments, triage review threads. For a single question about one comment, just read it; for rebasing or restacking the PR branch, use git."
 ---
 
 # Address PR Comments
@@ -29,18 +29,21 @@ These hold at every step; the steps below do not restate them.
 
 ## Step 1: Fetch the comments
 
-Every invocation starts with a fresh fetch. Use an authenticated GitHub connector when available; otherwise use `gh api` from the root of the repository being reviewed. Determine the repository from `origin` and the PR from the current branch unless the user supplies them.
+Every invocation starts with a fresh fetch. Run the bundled script from the root of the repository being reviewed:
 
-Fetch and paginate all of the following before proceeding:
+```bash
+python3 <skill-dir>/scripts/fetch_pr_comments.py [<pr-number-or-url>] [--repo OWNER/NAME]
+```
 
-- PR number, title, URL, head branch, and base branch;
-- PR-level comments in chronological order;
-- inline review threads in file and line order;
-- every reply in each thread, with author, timestamp, resolution state, and the original diff hunk.
+It needs an authenticated `gh` and makes read-only GraphQL calls. Without arguments it uses the PR of the current branch and the repository of the current directory. It paginates every connection and writes `temp/PR_REVIEW_COMMENTS.md`, overwriting any previous result:
 
-Write the fresh result to `temp/PR_REVIEW_COMMENTS.md`, overwriting any previous result. Preserve enough structure to distinguish PR-level comments, threads, and replies.
+- a header with PR number, title, URL, state, head and base branch, head commit, fetch timestamp, and counts, including how many GitHub-resolved threads were hidden;
+- PR-level comments and non-empty review summaries, in chronological order;
+- review threads in file and line order, each with its state (unresolved, outdated), `original_commit_id`, the diff hunk the reviewer saw, and every comment and reply with author and timestamp. Bot authors are marked `(bot)`.
 
-If it reports "No PRs found for branch …", ask the user for the PR number rather than guessing.
+Options: `--include-resolved` keeps resolved threads (marked), `--json FILE` also saves the raw data, `--from-json FILE` re-formats saved data without fetching, `--out FILE` changes the Markdown path. Where `gh` is not installed but an authenticated GitHub connector is, collect the same fields with the connector and write them to the same file in the same structure.
+
+If it reports "no pull requests found for branch …", ask the user for the PR number rather than guessing.
 
 **When the fetch fails, stop.** There is no fallback (invariant 6). Report the error verbatim and ask the user to provide a fresh complete export or enable authenticated GitHub access. Do not proceed on cached data even if the request implies urgency.
 
@@ -64,16 +67,16 @@ Work at *thread* granularity; replies belong to their thread, not to separate ro
 | `skip` | Denied. Nitpicks the user already pushed back on, off-topic suggestions, bot noise with no concrete ask, feedback the user declined. |
 | `deferred` | Understood and accepted, but not for this PR — the fix has a blocker (missing dependency, upstream change, unavailable data), or is large enough to warrant a standalone PR. Say which, and name the blocker. |
 - Use `deferred`, not `address`, when you know what to do but cannot land it in this PR.
-- Bot-only threads (e.g. `arcticowl-ai-review-emu[bot]`) with no human follow-up default to `skip` unless the finding survives the Step 3 check.
+- Threads whose only participants are bot accounts (marked `(bot)` in the fetch output) default to `skip` unless the finding survives the Step 3 check.
 - A reviewer who explicitly accepted a pushback ("sgtm", "ok, fine to leave") → `skip`, reason: reviewer accepted pushback.
 
-GitHub-`RESOLVED` threads are already stripped by the fetch script (the header says how many were hidden), so anything in the file is unresolved on GitHub. What you still have to catch are threads open on GitHub but settled in substance — that is Step 3's job.
+GitHub-resolved threads are already hidden by the fetch script (the header says how many), so anything in the file is unresolved on GitHub. What you still have to catch are threads open on GitHub but settled in substance — that is Step 3's job.
 
 ## Step 3: Investigate the code
 
 For each thread:
 
-1. **Locate it.** Read the current file at `<file>:<line>`. The diff hunk is the snapshot the reviewer saw; `original_commit_id` in the raw API data says which commit that was.
+1. **Locate it.** Read the current file at `<file>:<line>`. The diff hunk is the snapshot the reviewer saw; `original_commit_id` in the fetched file says which commit that was.
 2. **Already fixed?** Compare the current code against the concern.
     - Code no longer matches the hunk *and* the feedback no longer applies (reviewer flagged a missing null check; current code has one) → `fixed`, with the evidence (`null check present at <file>:N`, commit sha if known). An author reply saying "done" is not evidence on its own.
     - Code changed but the issue survives → keep it active, and state the problem against the *current* code, not the hunk.
