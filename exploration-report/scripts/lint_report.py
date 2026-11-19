@@ -8,17 +8,19 @@ Exit status is 1 when any error is reported, 0 otherwise (warnings alone
 do not fail), and 2 on usage error.
 
 Errors:
-  status         missing or invalid `Status: active|concluded` line
-  sections       required section missing, out of order, or empty
-  tldr           TL;DR has no bullets or more than five
-  scorecard      scorecard has no rows, no Status column, or an invalid status
-  link           relative link or in-report anchor that does not resolve
-  placeholder    TODO left in a concluded report
+  status          missing or invalid `Status: active|concluded` line
+  sections        required section missing, out of order, or empty
+  tldr            TL;DR has no bullets or more than five
+  scorecard       scorecard has no rows, no Status column, or an invalid status
+  link            relative link or in-report anchor that does not resolve
+  placeholder     template placeholder left (`TODO`, `YYYY-MM-DD`), in any status;
+                  an unfinished item belongs in the Scorecard as `not run` or `blocked`
 
-Warnings:
-  placeholder    TODO left in an active report
-  tldr-trace     TL;DR number that appears nowhere outside TL;DR and Scorecard
-  tldr-tag       TL;DR bullet with a number but no evidence tag
+Errors in a concluded report, warnings in an active one:
+  tldr-trace      TL;DR quantity that does not appear outside TL;DR and Scorecard;
+                  a number with a unit (`42 GB/s`, `3.1x`, `12%`) must reappear with
+                  the same unit, a bare number must reappear as a number
+  tldr-tag        TL;DR bullet with a number but no evidence tag
   tldr-confidence TL;DR bullet without "Confidence:"
 
 It cannot judge whether evidence supports a claim. Treat a clean run as the
@@ -53,7 +55,21 @@ INLINE_CODE_RE = re.compile(r"`[^`]*`")
 LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)\s]+)[^)]*\)")
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$", re.MULTILINE)
 STATUS_RE = re.compile(r"^Status:\s*(\S+)\s*$", re.MULTILINE)
-NUMBER_RE = re.compile(r"(?<![\w.])\d+(?:\.\d+)?")
+NUMBER_RE = re.compile(r"(?<![\w.])\d{1,3}(?:,\d{3})+(?:\.\d+)?|(?<![\w.,])\d+(?:\.\d+)?")
+# Units recognized after a number. Matching is case-sensitive (GB is not Gb).
+_UNITS = (
+    r"%|x|×|"
+    r"[npµμum]?s|sec|min|h|hr|days?|"
+    r"[KMGTP]i?B|B|[KMGT]?bit|[KMGT]b|bits?|"
+    r"[KMG]?IOPS|[KMG]?ops|[KMG]?op|req|reqs|"
+    r"[kKMG]?Hz|[kM]?W|[mk]?J|°C|"
+    r"cores?|threads?|nodes?|GPUs?|CPUs?|servers?|clients?"
+)
+QUANTITY_RE = re.compile(
+    r"(?<![\w.])(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)"
+    r"\s?(" + _UNITS + r")(?:/(\w+))?(?![\w/])"
+)
+PLACEHOLDER_RE = re.compile(r"\bTODO\b|YYYY-MM-DD")
 TAG_RE = re.compile(r"\[(measured|derived|estimated|(?:cited|discussion):[^\]]+)\]")
 
 
@@ -100,6 +116,15 @@ def table_rows(body: str) -> list[list[str]]:
             continue
         rows.append(cells)
     return rows
+
+
+def _number(text: str) -> float:
+    return float(text.replace(",", ""))
+
+
+def _quantity(match: re.Match) -> tuple[float, str, str]:
+    unit = "x" if match.group(2) == "×" else match.group(2).replace("μ", "µ")
+    return (_number(match.group(1)), unit, match.group(3) or "")
 
 
 def lint(path: Path) -> tuple[list[str], list[str]]:
@@ -151,21 +176,37 @@ def lint(path: Path) -> tuple[list[str], list[str]]:
     traced_body = "\n".join(
         body for title, body in sections if title not in {"TL;DR", "Scorecard"}
     )
+    traced_body = TAG_RE.sub("", INLINE_CODE_RE.sub(lambda m: m.group(0).strip("`"), traced_body))
+    body_quantities = {_quantity(m) for m in QUANTITY_RE.finditer(traced_body)}
+    body_numbers = {_number(n) for n in NUMBER_RE.findall(traced_body)}
+    tldr_issues = errors if status == "concluded" else warnings
     for bullet in tldr:
         stripped = TAG_RE.sub("", INLINE_CODE_RE.sub("", bullet))
-        numbers = NUMBER_RE.findall(stripped)
-        for number in dict.fromkeys(numbers):
-            if not re.search(rf"(?<![\w.]){re.escape(number)}(?![\d])", traced_body):
-                warnings.append(f"tldr-trace: `{number}` in TL;DR appears nowhere in the body")
-        if numbers and not TAG_RE.search(bullet):
-            warnings.append(f"tldr-tag: no evidence tag in `{bullet[:60]}`")
+        with_unit = {m.start(1): m for m in QUANTITY_RE.finditer(stripped)}
+        reported = set()
+        for match in NUMBER_RE.finditer(stripped):
+            quantity = with_unit.get(match.start())
+            if quantity is not None:
+                key, ok = _quantity(quantity), _quantity(quantity) in body_quantities
+                label = quantity.group(0)
+            else:
+                key, ok = _number(match.group(0)), _number(match.group(0)) in body_numbers
+                label = match.group(0)
+            if not ok and key not in reported:
+                reported.add(key)
+                tldr_issues.append(f"tldr-trace: `{label}` in TL;DR appears nowhere in the body")
+        if NUMBER_RE.search(stripped) and not TAG_RE.search(bullet):
+            tldr_issues.append(f"tldr-tag: no evidence tag in `{bullet[:60]}`")
         if "confidence:" not in bullet.lower():
-            warnings.append(f"tldr-confidence: no confidence in `{bullet[:60]}`")
+            tldr_issues.append(f"tldr-confidence: no confidence in `{bullet[:60]}`")
 
-    todo_count = len(re.findall(r"\bTODO\b", text))
-    if todo_count:
-        message = f"placeholder: {todo_count} TODO marker(s) left"
-        (errors if status == "concluded" else warnings).append(message)
+    placeholder_text = INLINE_CODE_RE.sub("", FENCE_RE.sub("", text))
+    placeholders = PLACEHOLDER_RE.findall(placeholder_text)
+    if placeholders:
+        errors.append(
+            f"placeholder: {len(placeholders)} template placeholder(s) left "
+            "(TODO or YYYY-MM-DD); fill them, or record unfinished items as `not run` or `blocked`"
+        )
 
     link_text = INLINE_CODE_RE.sub("", FENCE_RE.sub("", text))
     report_anchors = anchors(text)

@@ -65,7 +65,7 @@ Run the linter, [scripts/lint_report.py](scripts/lint_report.py):
 python3 <skill-dir>/scripts/lint_report.py reports/<date>-<slug>/report.md
 ```
 
-It checks the required sections, the status line, scorecard statuses, the TL;DR length, relative links, leftover placeholders, and TL;DR numbers that do not appear anywhere else in the report. It cannot judge whether the evidence supports a claim. For that, spawn a reviewer subagent with a fresh context and ask it to:
+It checks the required sections, the status line, scorecard statuses, the TL;DR length, and relative links, and it fails on any template placeholder left in the report (`TODO`, `YYYY-MM-DD`); record unfinished items in the Scorecard as `not run` or `blocked` instead. It also traces every TL;DR quantity into the body with its unit (`42 GB/s` must reappear as `42 GB/s`, not `42 MB/s`) and checks each TL;DR bullet for an evidence tag and a confidence; these TL;DR checks warn while the report is `active` and fail once it is `concluded`. It cannot judge whether the evidence supports a claim. For that, spawn a reviewer subagent with a fresh context and ask it to:
 
 - check that each TL;DR line and finding follows from the linked data, at the stated scope and confidence;
 - look for comparisons with unstated or unequal controls;
@@ -137,7 +137,7 @@ The required top-level sections, in order, are shown below. The template contain
 
 ### TL;DR Rules
 
-- Each bullet is one conclusion the user can act on. State it as a claim, not as a topic ("byte-plane restoration costs 3.1x more per byte than P2", not "restoration cost results").
+- Each bullet is one conclusion the user can act on. State it as a claim, not as a topic ("the new copy path costs 3.1x more CPU time per byte than the baseline", not "copy cost results").
 - Include the key number, its unit, and the denominator (per byte of input or of output, per core or per device).
 - State the condition under which the claim holds when it is narrower than the reader would assume.
 - End with a confidence level and the evidence tag of the key number.
@@ -190,7 +190,7 @@ When the user concludes the exploration, set `Status: concluded` and stop editin
 ## Relation To Other Skills
 
 - `repo-memory`: a report is a dated record of one exploration. Durable conclusions that should guide future work, including those established in discussion, go into the topic's repo-memory note, which links back to the report.
-- `systems-evaluation-planner` and `systems-paper-plotting`: use them when report figures are headed for a paper.
+- `systems-evaluation-planner` and `systems-paper-plotting`: use them when report results are headed for a paper; the planner takes the report's `data/derived/` (with its Data Index and Reproduce section) as input data.
 - `high-signal-writing`: applies to the chat handoff only.
 
 ## Done Criteria
