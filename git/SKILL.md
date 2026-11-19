@@ -1,6 +1,6 @@
 ---
 name: git
-description: "Local Git conventions to follow whenever working with Git in a repository. Use for any Git operation covered by the rules below, starting with worktrees: creating, placing, listing, or removing a `git worktree`, isolating work on a branch in a separate checkout, or running parallel agents in separate trees. Triggers: git worktree, add a worktree, new worktree, work in a worktree, isolate on a branch, parallel checkout."
+description: "Local Git conventions for any Git work in a repository: worktrees, and safe history rewriting. Use when creating, placing, listing, or removing a `git worktree`, isolating work on a branch in a separate checkout, or running parallel agents in separate trees; and before any `git rebase` or Graphite `gt restack`, or when resolving the conflicts they produce (backup branches and a restore doc first, `--onto` after a parent moves, the additive / base-rename / convergent layering rule). Triggers: git worktree, add a worktree, new worktree, work in a worktree, isolate on a branch, parallel checkout, rebase, rebase onto main, gt restack, restack the stack, restack branches, fix the stack, resolve rebase or restack conflicts. For GitHub PR review feedback, use address-pr-comments."
 ---
 
 # Git
@@ -29,3 +29,13 @@ git worktree add -b "$BRANCH" "$DIR"   # new branch from HEAD; drop -b for an ex
 - A new worktree has no gitignored files (env files, local config, `.venv`, `node_modules`, build output). Reinstall or copy what the task needs before building or testing in it.
 - Remove with `git worktree remove "$DIR"` (it refuses on uncommitted changes; inspect them before adding `--force`), then `git worktree prune`. Do not `rm -rf` a worktree directory.
 - If a tool creates worktrees elsewhere by default, pass it a path under `.worktree/` or create the worktree yourself with the commands above.
+
+## 2. Back up before rewriting history; resolve restack conflicts by layering.
+
+Before any `git rebase` or `gt restack`, make the old state recoverable, then rewrite. Read [rebase-restack.md](references/rebase-restack.md) before running the operation; it has the commands, the restore-doc format, and the conflict procedure.
+
+- **Backups first.** Create `backup/<YYYYMMDD-HHMMSS>/<branch>` for every branch the operation will move (one stamp per operation, created without `-f`).
+- **Restore doc second.** Record each branch's SHA, Graphite parent, upstream, and the backup prefix in `RESTACK-RESTORE-<YYYYMMDD>.md` at the repository root. Never overwrite an existing one: mark stale sections OUTDATED and append.
+- **`--onto` after a parent moves.** Move a child with `git rebase --onto <new-parent-tip> <old-parent-tip> <child>`, never a plain `git rebase <parent>`.
+- **Layering rule for conflicts.** Classify each hunk as additive (keep the descendant's), base rename or refactor (take the base's form, update the descendant), or convergent (take the base's copy and drop the empty commit). Use `zdiff3` conflict style so the ancestor is visible.
+- **Verify, do not push.** Build and test every restacked tip, check its diff against the new base and against its backup, keep the backup branches, and push only when the user asks.
