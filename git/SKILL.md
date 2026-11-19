@@ -1,6 +1,6 @@
 ---
 name: git
-description: "Local Git conventions for any Git work in a repository: worktrees, and safe history rewriting. Use when creating, placing, listing, or removing a `git worktree`, isolating work on a branch in a separate checkout, or running parallel agents in separate trees; and before any `git rebase` or Graphite `gt restack`, or when resolving the conflicts they produce (backup branches and a restore doc first, `--onto` after a parent moves, the additive / base-rename / convergent layering rule). Triggers: git worktree, add a worktree, new worktree, work in a worktree, isolate on a branch, parallel checkout, rebase, rebase onto main, gt restack, restack the stack, restack branches, fix the stack, resolve rebase or restack conflicts. For GitHub PR review feedback, use address-pr-comments."
+description: "Local Git conventions for any Git work in a repository: branch roles, worktrees, merge reminders, and safe history rewriting. Use when creating or naming a branch, finishing an epic, making a talk branch, creating, placing, listing, or removing a `git worktree`, isolating work on a branch in a separate checkout, or running parallel agents in separate trees; and before any `git rebase` or Graphite `gt restack`, or when resolving the conflicts they produce (backup branches and a restore doc first, `--onto` after a parent moves, the additive / base-rename / convergent layering rule). Triggers: new branch, branch naming, epic finished, ready to merge, talk branch, git worktree, add a worktree, new worktree, work in a worktree, isolate on a branch, parallel checkout, rebase, rebase onto main, gt restack, restack the stack, restack branches, fix the stack, resolve rebase or restack conflicts. For GitHub PR review feedback, use address-pr-comments."
 ---
 
 # Git
@@ -29,6 +29,35 @@ git worktree add -b "$BRANCH" "$DIR"   # new branch from HEAD; drop -b for an ex
 - A new worktree has no gitignored files (env files, local config, `.venv`, `node_modules`, build output). Reinstall or copy what the task needs before building or testing in it.
 - Remove with `git worktree remove "$DIR"` (it refuses on uncommitted changes; inspect them before adding `--force`), then `git worktree prune`. Do not `rm -rf` a worktree directory.
 - If a tool creates worktrees elsewhere by default, pass it a path under `.worktree/` or create the worktree yourself with the commands above.
+- **One worktree per branch, and only your own.** Never edit, commit in, or remove another session's worktree. After the user merges a branch, remove its worktree and delete the branch, or keep an `archive/<slug>` tag when the user wants it kept.
+
+## 3. Each branch has one role.
+
+| Branch | Role | Created from | Merged by |
+| --- | --- | --- | --- |
+| `main` | Shared truth: merged work and shared knowledge (see `repo-memory`) | | |
+| `epic/<slug>` | One unit of work: an experiment step, feature, or fix, with its code, results, and notes | `main` | The user |
+| `talk/<yyyy-mm>-<slug>` | Output only: slides, demo material, a shared snapshot. May stay unmerged | `main` or an epic | Nobody, unless the user asks |
+| `backup/<stamp>/<branch>` | Recovery point before a history rewrite (rule 2) | The branch it backs up | Never |
+
+- **Start each epic from `main`.** Stack an epic on another only when it needs that epic's unmerged code, and record the base branch in the epic's plan or index. Long stacks delay merges, so `main` lags.
+- **A talk branch is never the only home of knowledge.** Any fact, framing, or vocabulary decided while preparing output goes to `main` in the same session, per `repo-memory`.
+- A repository's `AGENTS.md` may extend the names (for example, step IDs in epic slugs). Follow it.
+
+```bash
+git switch main && git pull --ff-only   # when a remote exists
+BRANCH=epic/<slug>                     # then create its worktree with rule 1
+```
+
+## 4. Agents never merge an epic; they remind the user.
+
+Never merge, squash, or fast-forward an epic into `main` yourself. When an epic's work is finished (its questions answered, its result recorded), remind the user to merge it, in one message:
+
+- the branch name and its base;
+- its commits since the base: `git log --oneline main..<branch>`;
+- whether its worktree is clean: `git -C <worktree> status --short`;
+- the shared-knowledge updates the merge should carry, such as decision records or a research-direction note, named by path, and whether they are already on `main`;
+- anything that blocks the merge, such as an unmerged base epic or failing checks.
 
 ## 2. Back up before rewriting history; resolve restack conflicts by layering.
 

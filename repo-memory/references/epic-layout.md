@@ -92,7 +92,7 @@ Record a local epic decision in the relevant topic note. Promote it to an ADR or
 
 Promote knowledge that is useful beyond the epic: architecture behavior, domain rules, test or deployment practice, recurring failures, long-term constraints, accepted cross-cutting decisions. To promote:
 
-1. update the canonical repo-level document, abstracting away temporary epic detail;
+1. update the canonical repo-level document on the main line ([commit policy](../SKILL.md#commit-policy)), abstracting away temporary epic detail;
 2. update `docs/knowledge/index.md` (or the relevant index);
 3. link the epic note and the repo-level document when useful.
 

@@ -63,7 +63,7 @@ Commit each atomic deliverable (a feature, a fix, a paper version) as a mileston
 
 Any task larger than one atomic unit goes on its own branch, never the main line.
 
-- Code on `epic/xxx`; let the user do the final merge/squash. Branch papers too — those commits are backups the user later squashes.
+- Code on `epic/xxx`; let the user do the final merge/squash, and remind them when an epic is finished (`git` skill, rule 4). Branch papers too — those commits are backups the user later squashes.
 - Prefer a separate worktree (throwaway-cheap, protects the main tree); fall back to a branch in the current tree when a worktree's setup cost is high.
 - A fresh worktree lacks gitignored env, config, and installed deps — reinstall before expecting it to build.
 

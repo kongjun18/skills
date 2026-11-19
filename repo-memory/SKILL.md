@@ -17,7 +17,7 @@ Every task inside a repository. The mandatory part is small: the [Begin](#begin)
 2. **Intended and observed behavior stay separate.** See [Authority](#authority).
 3. **Knowledge status is visible.** A reader can tell verified facts, observations, inferences, hypotheses, proposals, accepted decisions, conflicts, and open questions apart. Never present a guess as a fact or a proposal as accepted.
 4. **Stale knowledge is handled, not dropped.** Important stale claims are marked invalid, expired, or superseded in the note that carries them, not silently deleted.
-5. **Knowledge follows the revision it describes.** Descriptive knowledge lives on the branch whose code it describes, and an agent writes only inside its own worktree.
+5. **Knowledge lives where every reader can find it.** Branch-local knowledge lives on the branch whose code it describes; shared knowledge lives on the main line. Knowledge is tracked in Git, never gitignored. An agent writes only inside its own worktree, except for the path-limited shared-knowledge commits in [Commit Policy](#commit-policy).
 6. **No ad hoc memory files.** No `NOTES.md`, `TODO.md`, `scratch.md`, `plan.md`, `progress-*.md`, or task summaries unless the repository defines that path as canonical. Classify content before writing; never create a temporary Markdown file in the repo to sort out later.
 7. **Built-in agent memory is a cache.** Vendor or session memory may hold preferences, pointers, and unverified candidates. It is never authoritative and never the only home of a specification, decision, constraint, or reusable finding.
 8. **The memory delta is reviewable on its own.** See [Commit Policy](#commit-policy).
@@ -92,8 +92,9 @@ Before starting work:
    rg -i "term|synonym" AGENTS.md CLAUDE.md docs --glob '!**/archive/**'
    # fallback: grep -Rin "term" AGENTS.md CLAUDE.md docs --exclude-dir=archive
    ```
-   Search archives only when investigating history or a regression.
-4. If the repository provides `memoryctl begin` or an equivalent hook, run it before the first repository write.
+   Search archives only when investigating history or a regression. In an epic worktree, read shared knowledge as it is on the main line (`git show main:<path>`), since the branch may be behind.
+4. **Before editing a shared file, check that it exists on the main line** (`git cat-file -e main:<path>`). If it lives only on a branch, move it to the main line first under the [Commit Policy](#commit-policy), or tell the user when the repository has not opted in.
+5. If the repository provides `memoryctl begin` or an equivalent hook, run it before the first repository write.
 
 Read the smallest relevant current view; do not load every note.
 
@@ -115,13 +116,23 @@ If the repository provides `memoryctl closeout` and `memoryctl verify` or equiva
 
 ## Commit Policy
 
+Memory comes in two kinds, and each has one home:
+
+- **Branch-local knowledge** describes the code on one branch: an epic's `index.md`, `status.md`, `progress.md`, and notes about its unmerged work. It lives on that branch.
+- **Shared knowledge** describes no single branch: the repository's direction, decision records, `AGENTS.md`, cross-epic `docs/knowledge/`, and specifications. It lives on the main line, so every session and worktree sees it. An output branch (talk, demo) or an epic is never its only home.
+
 Unless the repository or the user says otherwise:
 
-- **In a repository with no docs or memory convention** (shared or company repositories, coauthored papers), on any branch: leave memory changes unstaged and list them for the user.
-- **On the main line:** the same; leave them unstaged and list them.
-- **On an epic branch, or a task branch under one** (work isolated per `good-agent` §7): commit memory changes with the work, as separate commits whose subject starts with `memory:`, so the user can review, edit, or drop them independently of code commits. Do not mix memory and code in one commit. The user's merge or squash of the epic is the review gate.
+- **Branch-local, on an epic branch or a task branch under one** (work isolated per `good-agent` §7): commit it with the work, as separate commits whose subject starts with `memory:`, so the user can review, edit, or drop them independently of code commits. Do not mix memory and code in one commit. The user's merge or squash of the epic is the review gate.
+- **Shared, in a repository whose `AGENTS.md` opts in by listing its shared-knowledge paths:** commit it to the main line in the same session, as a small `memory:` commit made from the main checkout with explicit paths, so nothing else is staged or touched. If the main checkout has uncommitted changes to those paths, stop and ask. Never push.
+  ```bash
+  ROOT=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
+  git -C "$ROOT" add -- <paths>
+  git -C "$ROOT" commit -m "memory: <what changed>" -- <paths>
+  ```
+- **Everything else** (shared knowledge without the opt-in, memory edited directly on the main line, or any repository with no docs or memory convention, such as shared company repositories or coauthored papers): leave it unstaged and list it for the user.
 
-Unstaged memory does not reach other worktrees and is lost if the worktree is removed; say so when handing back.
+Never put knowledge in `.gitignore`: an ignored file exists only in the checkout that wrote it, so other worktrees and sessions never see it. Ignore only scratch space, run artifacts, large raw data, and private notes. Unstaged memory likewise does not reach other worktrees and is lost if the worktree is removed; say so when handing back.
 
 ## References
 
@@ -140,4 +151,4 @@ Unstaged memory does not reach other worktrees and is lost if the worktree is re
 - Every write passes the one-current-view test, and no ad hoc memory file was created.
 - Knowledge status is visible, and stale claims were handled in place.
 - Closeout was answered: one line for a small task, the full closeout for epic work.
-- Memory changes are in `memory:` commits on an epic branch, or left unstaged and reported.
+- Memory changes are in `memory:` commits on the right branch (epic for branch-local, main line for opted-in shared knowledge), or left unstaged and reported.

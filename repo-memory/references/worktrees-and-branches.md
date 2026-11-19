@@ -4,10 +4,10 @@ Read before using several worktrees, coordinating parallel branches, merging bra
 
 An agent:
 
-- writes only inside its current worktree and never modifies another worktree, including the main one;
+- writes only inside its current worktree and never modifies another worktree, with one exception: the path-limited shared-knowledge commit to the main line from the main checkout, in repositories that opt in ([commit policy](../SKILL.md#commit-policy));
 - keeps knowledge about branch-local implementation on that branch;
 - publishes code and descriptive memory through Git (commits, PRs, merges, rebases, cherry-picks), following the [commit policy](../SKILL.md#commit-policy);
-- does not treat the main worktree as a shared memory server.
+- does not treat any worktree's uncommitted files as shared memory; shared knowledge is shared only once it is committed on the main line.
 
 Code and its descriptive note need not share one commit, but they should reach the target branch through the same review or merge boundary.
 
