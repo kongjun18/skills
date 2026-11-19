@@ -1,6 +1,6 @@
 ---
 name: systems-evaluation-planner
-description: Plan evidence chains and figure sets for systems research papers targeting venues such as SIGMOD, FAST, OSDI, SOSP, NSDI, EuroSys, and ASPLOS. Use when Codex needs to turn paper claims, experiment outputs, or author goals into a defensible evaluation_plan.yaml; decide which baselines, workloads, load sweeps, repetitions, robustness checks, and figure families are needed; separate figures that can be generated now from recommended follow-up experiments and unsupported claims; or prepare a handoff to systems-paper-plotting. This skill plans what to plot and why, but does not implement visual styling or rendering.
+description: "Plan evidence chains and figure sets for systems research papers. Use to turn paper claims, experiment outputs (including an exploration report's derived data), or author goals into a defensible evaluation_plan.yaml; decide which baselines, workloads, load sweeps, repetitions, robustness checks, and figure families are needed; audit an existing evaluation or draft for unsupported claims; separate figures that can be generated now from recommended follow-up experiments and unsupported claims; or prepare a handoff to systems-paper-plotting. Triggers: plan the evaluation, what experiments do we need, which figures support this claim, evaluation plan, is this claim supported. This skill plans what to plot and why; for rendering and styling use systems-paper-plotting, and for running experiments and recording their results use exploration-report."
 ---
 
 # Systems Evaluation Planner
@@ -72,6 +72,8 @@ For each item record `question`, `answer`, `basis`, and `impact`.
 
 You may inspect CSV, TSV, JSON, JSONL, and Parquet files. Do not modify raw data.
 
+When the results come from an exploration report (`exploration-report`), use its `data/derived/` as the data root, its Data Index for provenance, and its Reproduce section and caveats for the run conditions; treat its `[estimated]` and `[cited]` numbers as non-measured evidence.
+
 Check manually or with ordinary local tools for:
 
 - files, rows, columns, types, missing values, duplicate keys, and unique values;
@@ -139,22 +141,7 @@ Classify figures as:
 
 ## Phase 6: Require Standalone And Combined Outputs
 
-When a figure has multiple facet values, require:
-
-```yaml
-output:
-  standalone: true
-  combined_paper: true
-  combined_overview: true
-```
-
-Combined figures are small multiples with shared visual encoding, not forced averages across datasets. Allow cross-dataset aggregation only when the statistical meaning is explicit.
-
-If there are too many panels:
-
-- split the paper combined figure into parts with a controlled panel count;
-- keep every panel in the complete overview by enlarging the vector canvas or using multipage PDF;
-- keep method order, colors, markers, hatches, and component order globally consistent.
+When a figure has multiple facet values, request the full output scope (standalone, combined paper, combined overview) using the fields of the [data contract](../systems-paper-plotting/references/data-contract.md#output-scope) owned by `systems-paper-plotting`. Combined figures are small multiples, not averages across datasets; request an aggregate only when its statistical meaning is explicit.
 
 ## Phase 7: Emit Three Outcome Classes
 
@@ -185,7 +172,7 @@ At minimum include:
 - opening question status;
 - data files and semantics;
 - global baseline, ordering, and statistical policy;
-- directly generatable figure specs;
+- directly generatable figure specs, each with the fields of the [data contract](../systems-paper-plotting/references/data-contract.md#figure-spec-fields);
 - suggested follow-up experiments;
 - unsupported claims;
 - standalone and combined output requirements;
@@ -252,4 +239,4 @@ Finish only when:
 - every figure has a research question, data source, metric, baseline, statistical unit, and output scope;
 - every multi-facet figure requests standalone and combined outputs;
 - no data is invented and failure semantics are explicit;
-- the plan passes the quality checklist or clearly states why it is still blocked.
+- a plan that is not executable says why (`status: blocked` with the blocking questions listed).

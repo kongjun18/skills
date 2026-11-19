@@ -7,23 +7,24 @@ Roles:
 - **Main agent (you)** — builds the reviewer's context, decides whether each finding is correct, applies the accepted ones, regenerates the figure, and asks the human about anything you shouldn't decide alone.
 - **Human** — decides escalations. Their answers are recorded in the ledger and never re-litigated.
 
-Scope is **presentation/layout only** (overlaps, label/legend placement, axis ranges/ticks, fonts at print size, whitespace, naming/color consistency). Changes to data, panels, metrics, or chart types count as redesign: note them for the human and don't apply them. A layout fix must never break the Non-Negotiable Rules in `SKILL.md`; axis-range changes are the usual way that happens (truncated bars, clipped points, hidden failure markers).
+Scope is **presentation/layout only** (overlaps, label/legend placement, axis ranges/ticks, fonts at print size, whitespace, naming/color consistency). Changes to data, panels, metrics, or chart types count as redesign: note them for the human and don't apply them. A layout fix must never break the non-negotiable rules in [SKILL.md](../SKILL.md); axis-range changes are the usual way that happens (see [pitfalls.md](pitfalls.md)).
 
 Tool names below are Claude Code's (`Agent`, `AskUserQuestion`). In other harnesses, use the equivalent subagent-spawn and ask-the-user mechanisms.
 
 ## Phase 0 — Setup (once per run)
 
-1. **Resolve targets.** For each figure, find: plot script, input data, output PNG/PDF, and `figsize`. Map it to the paper: grep the LaTeX sources (e.g. `main.tex` and its `\input` files) for the figure stem, a similar stem, or the section that discusses it; get the `\includegraphics` width, the caption, and the paragraph(s) that cite it. USENIX and acmart two-column templates: `\columnwidth` ≈ 3.33 in, `\textwidth` ≈ 7.0 in. Resolve relative widths such as `0.48\textwidth` to inches.
+1. **Resolve targets.** For each figure, find: plot script, input data, output PNG/PDF, and `figsize`. Map it to the paper: grep the LaTeX sources (e.g. `main.tex` and its `\input` files) for the figure stem, a similar stem, or the section that discusses it; get the `\includegraphics` width, the caption, and the paragraph(s) that cite it. Resolve the width to inches as described in [visual-style-principles.md](visual-style-principles.md#size-and-layout-at-placed-size).
    - Output filenames often differ from the ones the LaTeX includes. If the paper location can't be found with confidence, **ask the human** (list candidates). Don't review without paper context, because the reviewer's goal comes from it.
 2. **Write the context packet** to `.figreview/<stem>/context.md` (scratch, never committed):
    - *Claim*: the one sentence the figure must convince a reader of, quoted or paraphrased from the paper text. If the text never states it, ask the human.
+   - Target venue or audience (fills `{venue_or_audience}` in the brief).
    - Print width (in) and the scale factor = print width / figsize width. Font sizes at print size are what matter.
    - Caption and citing paragraph (verbatim, short).
    - Series/baseline names and colors used in *other* figures of the same paper (grep the other scripts), so the reviewer can check consistency.
    - Settled decisions from `.figreview/<stem>/ledger.md` (if it exists) and from persistent memory, if the harness has one.
 3. **Confirm the goal once** with AskUserQuestion when anything is non-default: targets, the claim you inferred, max rounds (default 3). Skip this if the user already stated all of it.
-   - Layout requests such as "merge figures A and B", "move figure C to one column", or "make it a 2 by 2 grid" can be read more than one way. Before acting, restate the result: the number of floats with their labels and captions, the panels and grid of each, and the placed width. When you ask with options, each option must name these consequences. "Combine into one figure" can mean merging two floats or arranging one figure's panels, and guessing wrong costs a full revert.
-4. Render the baseline: run the script with the project's own command (Makefile target, virtualenv, etc.). If there is none, use an isolated run that includes every package the script imports, e.g. `uv run --no-project --with matplotlib --with numpy --with pandas python <script>`. View the PNG and snapshot it to `.figreview/<stem>/r0.png`.
+   - Restate ambiguous layout requests before acting ([pitfalls.md](pitfalls.md)); when you ask with options, each option names its consequences.
+4. Render the baseline: run the script with the project's own command (Makefile target, virtualenv, etc.), or an isolated environment ([pitfalls.md](pitfalls.md)). View the PNG and snapshot it to `.figreview/<stem>/r0.png`.
 5. Run the invariant check below on the baseline render. Report pre-existing violations to the human as out-of-scope content concerns; don't fix them silently.
 
 ## Phase 1 — Loop (per figure, round r = 1..max)
@@ -70,7 +71,7 @@ Batch every escalation of the round into **one** AskUserQuestion call (≤4 ques
 ## Round r
 - F3 accept  — legend overlapped series B at x∈[8,16] → moved legend to upper left (verified r2.png)
 - F4 reject  — "fonts too small": 7.9pt at print, already ≥ caption size
-- F5 human   — rename "Ours" → "AlpsANN"? → human: yes, in all figures
+- F5 human   — rename "Ours" → "<SystemName>"? → human: yes, in all figures
 ```
 The ledger is the settled-decision list for the next reviewer. If the human gives a rule that should last beyond this run (e.g. "never change figsize"), offer to save it to memory.
 
