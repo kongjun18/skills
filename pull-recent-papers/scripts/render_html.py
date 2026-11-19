@@ -49,15 +49,19 @@ Input JSON (stdin or a path):
     }
 
 Usage:
-    python3 render_html.py digest.json                 # -> stdout
+    python3 render_html.py DIR/digest-YYYY-Www.json --out-dir DIR   # -> DIR/digest-YYYY-Www.html
     python3 render_html.py digest.json -o out.html
-    cat digest.json | python3 render_html.py
+    cat digest.json | python3 render_html.py                      # -> stdout
+
+Outputs belong in the user's digest directory, never inside the skills
+repository; the script refuses such an output path.
 """
 from __future__ import annotations
 
 import argparse
 import html
 import json
+from pathlib import Path
 import sys
 
 # ---- Frozen style. Edit here to restyle every digest consistently. ----------
@@ -292,7 +296,18 @@ def main() -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("input", nargs="?", help="digest JSON path (default: stdin)")
     ap.add_argument("-o", "--output", help="write HTML here (default: stdout)")
+    ap.add_argument("--out-dir", help="write <input-stem>.html into this directory")
     args = ap.parse_args()
+    if args.out_dir:
+        if not args.input:
+            ap.error("--out-dir needs an input path to name the output")
+        args.output = str(Path(args.out_dir).expanduser() / (Path(args.input).stem + ".html"))
+    if args.output:
+        repo = Path(__file__).resolve().parents[2]
+        target = Path(args.output).expanduser().resolve()
+        if repo in target.parents:
+            ap.error(f"refusing to write inside the skills repository ({repo}); "
+                     "write to the digest directory instead")
 
     raw = open(args.input) if args.input else sys.stdin
     data = json.load(raw)

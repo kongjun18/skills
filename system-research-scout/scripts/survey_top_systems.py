@@ -11,6 +11,9 @@ This script is the collection and scaffolding step, NOT the researcher. It:
     an `awards` list,
   - assigns a `priority_seed` (must-read | should-read | skim) using deployment
     and award signals,
+  - extracts a bounded `introduction_excerpt` from each local PDF with
+    `pdftotext` (empty when no PDF or no pdftotext), so reader quotes from the
+    Introduction are checkable by the validator,
   - writes per-venue catalog files under thinking/catalog/{venue}-{year}.md
     using the 5-line digest schema from references/final_deliverables.md,
   - removes the legacy monolithic thinking/paper_catalog.md and stale
@@ -18,6 +21,14 @@ This script is the collection and scaffolding step, NOT the researcher. It:
 
 Curated tags, sparks, ideas, and trends are produced by agents in Steps 3-7 of
 the workflow described in SKILL.md, not by this script.
+
+All outputs go under a user-chosen workspace (--out DIR): DIR/papers,
+DIR/thinking, DIR/sparking. The script refuses to write inside the skills
+repository that contains it.
+
+Usage:
+  python3 <skill-dir>/scripts/survey_top_systems.py --out DIR [--years 2025 2026]
+  python3 <skill-dir>/scripts/survey_top_systems.py --print-intro PAPER.pdf
 """
 
 from __future__ import annotations
@@ -27,15 +38,25 @@ import hashlib
 import json
 import re
 import shutil
+import subprocess
 import time
 import unicodedata
 from dataclasses import asdict, dataclass, field
+from datetime import date
 from pathlib import Path
 from typing import Iterable
 from urllib.parse import parse_qs, unquote, urljoin, urlparse
 
-import requests
-from bs4 import BeautifulSoup
+try:  # network dependencies are only needed for a collection run
+    import requests
+    from bs4 import BeautifulSoup
+except ImportError:  # pragma: no cover - reported when a collection run starts
+    requests = None
+    BeautifulSoup = None
+
+SKILL_DIR = Path(__file__).resolve().parents[1]
+INTRO_MAX_CHARS = 6000
+INTRO_PAGES = 3
 
 
 USER_AGENT = "system-research-scout/1.0 (+research metadata; respectful crawler)"
@@ -143,7 +164,7 @@ STATIC_STATUS = [
 
 
 # Keyword-seed tagging is a SCAFFOLD. Reader agents replace these with curated
-# tags from the 16-leaf taxonomy in SKILL.md §5. Do not derive trend or taste
+# tags from the taxonomy in references/taxonomy-and-priority.md. Do not derive trend or taste
 # claims from this list; the field name is deliberately verbose to discourage
 # mistaking it for ground truth.
 KEYWORD_SEED_RULES = [
@@ -198,6 +219,7 @@ class Paper:
     topic_tags_keyword_seed: list[str] = field(default_factory=list)
     topic_tags_curated: list[str] = field(default_factory=list)
     topic_tag_evidence: dict[str, str] = field(default_factory=dict)
+    introduction_excerpt: str = ""
 
 
 def normalize_text(text: str) -> str:
@@ -266,7 +288,7 @@ def infer_keyword_seed_tags(paper: Paper) -> list[str]:
 def assign_priority_seed(paper: Paper) -> str:
     """Coarse read priority — readers may override and record a reason.
 
-    Rules (from SKILL.md §6):
+    Rules (from references/taxonomy-and-priority.md, "Read priority"):
       - any award                                  -> must-read
       - industry-at-scale author + deployment      -> must-read
       - abstract mentions deployment/scale         -> should-read
@@ -288,7 +310,8 @@ def assign_priority_seed(paper: Paper) -> str:
 
 def boost_priority_by_clustering(rows: list[Paper]) -> None:
     """If >=3 papers in the same (year, keyword-seed-tag) bucket are still
-    `skim`, promote them to `should-read` per SKILL.md §6."""
+    `skim`, promote them to `should-read` (see "Read priority" in
+    references/taxonomy-and-priority.md)."""
     bucket: dict[tuple[int, str], list[Paper]] = {}
     for row in rows:
         for tag in row.topic_tags_keyword_seed:
@@ -594,6 +617,51 @@ def finalize_paper_downloads(rows: list[Paper], papers_dir: Path, client: Client
             row.download_error = str(exc)
 
 
+INTRO_HEADING = re.compile(r"^\s*(?:1|I)?\.?\s*Introduction\s*$", re.I | re.M)
+NEXT_HEADING = re.compile(r"^\s*(?:2|II)\.?\s+[A-Z][^\n]{2,80}$", re.M)
+
+
+def pdf_text(pdf_path: Path, first: int = 1, last: int | None = None) -> str:
+    """Return pdftotext output for a page range, or "" when unavailable."""
+    if not shutil.which("pdftotext") or not pdf_path.is_file():
+        return ""
+    cmd = ["pdftotext", "-q", "-f", str(first)]
+    if last is not None:
+        cmd += ["-l", str(last)]
+    cmd += [str(pdf_path), "-"]
+    try:
+        out = subprocess.run(cmd, capture_output=True, timeout=60, check=False)
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+    return out.stdout.decode("utf-8", errors="replace")
+
+
+def introduction_from_text(text: str, max_chars: int = INTRO_MAX_CHARS) -> str:
+    """Cut the Introduction section out of extracted PDF text.
+
+    Starts after an "Introduction" heading ("1 Introduction", "I. INTRODUCTION",
+    "Introduction") and stops at the next section-2 heading or after max_chars.
+    Returns "" when no heading is found, so no excerpt is better than a wrong one.
+    Whitespace is collapsed; words are otherwise left as extracted, so quotes
+    stay verbatim."""
+    match = INTRO_HEADING.search(text)
+    if not match:
+        return ""
+    body = text[match.end():]
+    stop = NEXT_HEADING.search(body)
+    if stop:
+        body = body[:stop.start()]
+    body = re.sub(r"\s+", " ", body).strip()
+    if len(body) > max_chars:
+        cut = body.rfind(". ", 0, max_chars)
+        body = body[: cut + 1 if cut > 0 else max_chars]
+    return body
+
+
+def introduction_excerpt(pdf_path: Path) -> str:
+    return introduction_from_text(pdf_text(pdf_path, 1, INTRO_PAGES))
+
+
 def write_jsonl(rows: list[Paper], status_rows: list[dict], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as f:
@@ -690,44 +758,78 @@ def cleanup_legacy_outputs(thinking_dir: Path) -> None:
         shutil.rmtree(legacy_per_paper)
 
 
+def default_years() -> list[int]:
+    this_year = date.today().year
+    return [this_year - 1, this_year]
+
+
+def configured_years() -> set[int]:
+    keys = list(USENIX_SOURCES) + list(SIGCOMM_SOURCES) + list(SOSP_ACCEPTED_SOURCES)
+    keys += list(SIGMOD_OPENTOC_SOURCES)
+    return {year for _, year in keys} | {row["year"] for row in STATIC_STATUS}
+
+
+def resolve_out(out: str) -> Path:
+    root = Path(out).expanduser().resolve()
+    repo = SKILL_DIR.parent
+    if root == repo or repo in root.parents:
+        raise SystemExit(
+            f"refusing to write outputs inside the skills repository ({repo}); "
+            "pass --out with a workspace outside it, e.g. ~/projects/research-radar/scout-<date>")
+    return root
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--years", nargs="+", type=int, default=[2025, 2026])
-    parser.add_argument("--out-papers", default="papers")
-    parser.add_argument("--out-thinking", default="thinking")
-    parser.add_argument(
-        "--out-sparking",
-        default="sparking",
-        help="Directory where reader/synthesis/critic agents will write spark files. "
-        "Created if missing; the script does not write spark content (agents do).",
-    )
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--out", help="Workspace directory; writes OUT/papers, OUT/thinking, OUT/sparking.")
+    parser.add_argument("--years", nargs="+", type=int, default=None,
+                        help="Calendar years to collect (default: the last two, from today's date).")
     parser.add_argument("--no-download", action="store_true", help="Collect metadata without downloading PDFs.")
+    parser.add_argument("--print-intro", metavar="PDF", type=Path,
+                        help="Print the introduction excerpt extracted from one PDF and exit.")
     args = parser.parse_args()
 
-    papers_dir = Path(args.out_papers)
-    thinking_dir = Path(args.out_thinking)
-    sparking_dir = Path(args.out_sparking)
+    if args.print_intro:
+        excerpt = introduction_excerpt(args.print_intro)
+        print(excerpt or "(no introduction excerpt: no pdftotext, no PDF, or no Introduction heading)")
+        return
+    if not args.out:
+        parser.error("--out DIR is required for a collection run")
+    if requests is None or BeautifulSoup is None:
+        raise SystemExit("a collection run needs `requests` and `beautifulsoup4` "
+                         "(e.g. uv run --with requests --with beautifulsoup4 python ...)")
+
+    out = resolve_out(args.out)
+    years = args.years or default_years()
+    missing = sorted(set(years) - configured_years())
+    if missing:
+        print(f"WARNING: no sources configured for {missing}; add them to the source tables "
+              "after checking references/source_manifest.md, and record them in the coverage ledger.")
+    papers_dir = out / "papers"
+    thinking_dir = out / "thinking"
+    sparking_dir = out / "sparking"
     sparking_dir.mkdir(parents=True, exist_ok=True)
     client = Client(papers_dir / "_cache")
     rows: list[Paper] = []
 
     for (venue, year), url in USENIX_SOURCES.items():
-        if year in args.years:
+        if year in years:
             rows.extend(parse_usenix(client, venue, year, url))
 
     for (venue, year), url in SIGCOMM_SOURCES.items():
-        if year in args.years:
+        if year in years:
             rows.extend(parse_sigcomm_2025(client, url))
 
     for (venue, year), url in SOSP_ACCEPTED_SOURCES.items():
-        if year in args.years:
+        if year in years:
             rows.extend(parse_sosp_accepted(client, year, url))
 
     for (venue, year), urls in SIGMOD_OPENTOC_SOURCES.items():
-        if year in args.years:
+        if year in years:
             rows.extend(parse_sigmod_opentoc(client, year, urls))
 
-    status_rows = [row for row in STATIC_STATUS if row["year"] in args.years]
+    status_rows = [row for row in STATIC_STATUS if row["year"] in years]
     rows = dedupe(rows)
     finalize_paper_downloads(rows, papers_dir, client, not args.no_download)
 
@@ -735,6 +837,8 @@ def main() -> None:
     for row in rows:
         row.topic_tags_keyword_seed = infer_keyword_seed_tags(row)
         row.priority_seed = assign_priority_seed(row)
+        if row.local_pdf:
+            row.introduction_excerpt = introduction_excerpt(Path(row.local_pdf))
     boost_priority_by_clustering(rows)
 
     write_jsonl(rows, status_rows, papers_dir / "metadata.jsonl")
@@ -742,14 +846,15 @@ def main() -> None:
     cleanup_legacy_outputs(thinking_dir)
     write_catalog_per_venue_year(rows, thinking_dir)
 
-    print(f"Collected {len(rows)} paper metadata rows")
+    with_intro = sum(1 for row in rows if row.introduction_excerpt)
+    print(f"Collected {len(rows)} paper metadata rows ({with_intro} with an introduction excerpt)")
     print(f"Wrote {papers_dir / 'metadata.jsonl'}")
     print(f"Wrote {thinking_dir / 'catalog'}/<venue>-<year>.md (one per venue-year)")
     print(f"Ensured {sparking_dir} exists for agent-authored sparks")
     print(
         "Next steps for the agent: build thinking/coverage_ledger.md, fan out "
         "reader agents, run synthesis and critic, then validate with "
-        "scripts/validate_outputs.py."
+        f"python3 {SKILL_DIR}/scripts/validate_outputs.py --out {out}"
     )
 
 

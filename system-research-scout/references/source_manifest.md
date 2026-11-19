@@ -1,6 +1,6 @@
 # Source Manifest
 
-This manifest lists preferred sources and known availability as of 2026-06-09. Always re-check official pages before a new run. If a venue-year has not happened or proceedings are not public, skip it from analysis and record it in the coverage ledger.
+This manifest lists preferred sources and the availability observed when it was last verified (2026-06-09). Dates below are observations, not current facts: re-check every official page before a new run, update this file and the source tables in `scripts/survey_top_systems.py` for new years. If a venue-year has not happened or proceedings are not public, skip it from analysis and record it in the coverage ledger.
 
 ## USENIX
 

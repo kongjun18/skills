@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 """Pre-flight validator for system-research-scout outputs.
 
-Enforces gates A-I from SKILL.md §10. The skill is not complete until this
-script exits with status 0.
+Enforces gates A-J listed in SKILL.md ("Pre-flight gates"). The skill is not
+complete until this script exits with status 0. Empty or unfilled outputs fail
+(gate J): a run with no sparks, no curated tags, no venue reads, or no ideas is
+not a passing run.
 
 Each check runs independently so partial failures still produce a useful
 report. Exit code is the number of failed gates (capped at 1 for non-zero
 shell semantics; use --strict to exit with the actual failure count).
 
 Usage:
-  python scripts/validate_outputs.py \
-      --thinking thinking --sparking sparking --papers papers
+  python3 <skill-dir>/scripts/validate_outputs.py --out DIR
+  (reads DIR/papers, DIR/thinking, DIR/sparking; --papers/--thinking/--sparking
+  override individual directories)
 """
 
 from __future__ import annotations
@@ -18,7 +21,10 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
+import subprocess
 import sys
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -59,8 +65,35 @@ def strip_code_fences(text: str) -> str:
 
 
 def normalize_quote(text: str) -> str:
-    """Whitespace-collapse and lowercase for case-insensitive quote matching."""
+    """Normalize text for verbatim-quote matching: NFKC (ligatures), straight
+    quotes, lowercase, and line-break hyphenation removed ("sys- tem" and
+    "system" match), whitespace collapsed. Applied to both quote and corpus."""
+    text = unicodedata.normalize("NFKC", text or "")
+    text = text.translate(str.maketrans({"“": '"', "”": '"', "‘": "'", "’": "'",
+                                         "\u00ad": "", "–": "-", "—": "-"}))
+    text = re.sub(r"-\s*", "", text)
     return re.sub(r"\s+", " ", text).strip().lower()
+
+
+_PDF_TEXT_CACHE: dict[str, str] = {}
+
+
+def local_pdf_text(paper: dict) -> str:
+    """Full pdftotext output of the paper's local PDF, normalized; "" if none."""
+    path = paper.get("local_pdf") or ""
+    if not path:
+        return ""
+    if path not in _PDF_TEXT_CACHE:
+        text = ""
+        if shutil.which("pdftotext") and Path(path).is_file():
+            try:
+                out = subprocess.run(["pdftotext", "-q", path, "-"], capture_output=True,
+                                     timeout=120, check=False)
+                text = out.stdout.decode("utf-8", errors="replace")
+            except (OSError, subprocess.TimeoutExpired):
+                text = ""
+        _PDF_TEXT_CACHE[path] = normalize_quote(text)
+    return _PDF_TEXT_CACHE[path]
 
 
 @dataclass
@@ -173,24 +206,33 @@ def gate_b_coverage_gated_trend(thinking_files: dict[Path, str]) -> GateResult:
 
 def gate_c_evidence_chain(spark_files: dict[Path, str],
                           papers: list[dict]) -> GateResult:
+    """Every spark has an Observed-mismatch quote, and each quote appears
+    verbatim (after normalize_quote) in a paper's abstract or
+    introduction_excerpt, or in the local PDF text of a paper the spark cites.
+    This is the single checkable-corpus rule stated in SKILL.md."""
     failures: list[str] = []
-    abstract_corpus = " ".join(normalize_quote(p.get("abstract", "")) for p in papers)
-    intro_corpus = " ".join(normalize_quote(p.get("introduction_excerpt", "")) for p in papers)
-    corpus = abstract_corpus + " " + intro_corpus
+    corpus = " ".join(normalize_quote(p.get("abstract", "")) + " " +
+                      normalize_quote(p.get("introduction_excerpt", "")) for p in papers)
+    titles = {p.get("title", ""): p for p in papers}
     for path, text in spark_files.items():
-        # Skip sparks with explicit not-yet-falsifiable / solo-signal statuses
-        # only for the Disconfirming/Corroboration fields, NOT for the
-        # Observed-mismatch quote — it must still be a real quote.
-        for m in OBSERVED_MISMATCH.finditer(text):
+        quotes = list(OBSERVED_MISMATCH.finditer(text))
+        if not quotes:
+            failures.append(f"{path}: no 'Observed mismatch: \"...\"' quote — every spark needs one")
+            continue
+        cited = [titles[t] for t in _cited_paper_titles(text, set(titles))]
+        for m in quotes:
             quote = normalize_quote(m.group(1))
             if len(quote) < 8:
                 failures.append(f"{path}: Observed-mismatch quote too short to verify")
                 continue
-            if quote not in corpus:
-                failures.append(
-                    f"{path}: Observed-mismatch quote not found in any "
-                    "paper abstract/intro — possible fabrication. Quote starts: "
-                    f"{quote[:80]!r}")
+            if quote in corpus:
+                continue
+            if any(quote in local_pdf_text(p) for p in cited):
+                continue
+            failures.append(
+                f"{path}: Observed-mismatch quote not found in any abstract, "
+                "introduction_excerpt, or the local PDF of a cited paper — possible "
+                f"fabrication. Quote starts: {quote[:80]!r}")
     return GateResult("C. Evidence chain", not failures, failures)
 
 
@@ -345,13 +387,37 @@ def gate_i_idea_grammar(thinking_files: dict[Path, str]) -> GateResult:
     return GateResult("I. Idea grammar", not failures, failures)
 
 
+def gate_j_non_empty(papers: list[dict], spark_files: dict[Path, str],
+                     thinking_files: dict[Path, str], papers_dir: Path) -> GateResult:
+    """A run with nothing to check is not a passing run."""
+    failures: list[str] = []
+    if not papers:
+        failures.append(f"{papers_dir / 'metadata.jsonl'}: missing or has no paper rows — "
+                        "run survey_top_systems.py --out DIR first")
+    elif not any(p.get("topic_tags_curated") for p in papers):
+        failures.append("no paper has topic_tags_curated — reader agents (Step 4) must curate tags "
+                        "with quoted topic_tag_evidence")
+    if not spark_files:
+        failures.append("sparking/ has no spark files — Step 7 must write at least one spark")
+    if not any(p.parent.name == "venue_reads" for p in thinking_files):
+        failures.append("thinking/venue_reads/ is empty — Step 4 reader output is missing")
+    if not any(p.name == "coverage_ledger.md" for p in thinking_files):
+        failures.append("thinking/coverage_ledger.md is missing — Step 1 output")
+    ideas = next((t for p, t in thinking_files.items() if p.name == "research_ideas.md"), "")
+    if not re.search(r"^##\s+\S", ideas, re.M):
+        failures.append("thinking/research_ideas.md has no '## ' idea blocks")
+    return GateResult("J. Non-empty outputs", not failures, failures)
+
+
 # ---------- Driver ----------
 
 def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--thinking", default="thinking")
-    parser.add_argument("--sparking", default="sparking")
-    parser.add_argument("--papers", default="papers")
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--out", help="Workspace passed to survey_top_systems.py --out.")
+    parser.add_argument("--thinking", help="Override OUT/thinking.")
+    parser.add_argument("--sparking", help="Override OUT/sparking.")
+    parser.add_argument("--papers", help="Override OUT/papers.")
     parser.add_argument(
         "--strict",
         action="store_true",
@@ -359,15 +425,19 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    thinking_dir = Path(args.thinking)
-    sparking_dir = Path(args.sparking)
-    papers_dir = Path(args.papers)
+    if not args.out and not (args.thinking and args.sparking and args.papers):
+        parser.error("pass --out DIR (or all of --papers, --thinking, --sparking)")
+    out = Path(args.out).expanduser() if args.out else None
+    thinking_dir = Path(args.thinking) if args.thinking else out / "thinking"
+    sparking_dir = Path(args.sparking) if args.sparking else out / "sparking"
+    papers_dir = Path(args.papers) if args.papers else out / "papers"
 
     papers = load_papers(papers_dir)
     spark_files = load_sparks(sparking_dir)
     thinking_files = load_thinking_files(thinking_dir)
 
     results = [
+        gate_j_non_empty(papers, spark_files, thinking_files, papers_dir),
         gate_a_no_scaffolding(thinking_files, spark_files),
         gate_b_coverage_gated_trend(thinking_files),
         gate_c_evidence_chain(spark_files, papers),

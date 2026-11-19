@@ -1,8 +1,12 @@
 ---
 name: pull-recent-papers
 description: >-
-  Weekly arXiv digest pipeline for a storage researcher. Use whenever the user wants a digest, roundup, weekly
-  summary, or "what's new on arXiv" for storage/systems research.
+  Weekly arXiv digest and research radar for a storage-focused systems researcher: fetch recent cs.DB/OS/DC/AR/PF
+  preprints, filter and rank them by storage proximity, evaluate them, and write a week-in-review with highlights
+  and directions as JSON, Markdown, and frozen-style HTML in a user-chosen digest directory. Use for "weekly digest",
+  "arXiv roundup", "what's new on arXiv", "recent storage/systems papers this week", "last N days of papers".
+  For a survey of conference proceedings or evidence-bound research ideas from top venues, use
+  system-research-scout.
 ---
 
 # Pull Recent Papers
@@ -27,10 +31,17 @@ fetch  →  filter  →  ranking  →  evaluation  →  presentation
 Stages 1–3 are mostly deterministic (script + light curation); stages 4–5 are
 where the agent adds judgment.
 
+## Digest directory
+
+Ask the user where digests live (for example `~/projects/research-radar/digests/`)
+and call it `DIR`. All outputs go there, never into the skills repository. The
+scripts use only the Python standard library (plus `pdftotext` for the
+affiliation fallback); `<skill-dir>` below is the directory containing this file.
+
 ## Reader context
 
-Look for an optional **`context.md`** at the repository/workspace root (the same
-directory that receives the digest outputs). This is a user-owned file: the user
+Look for an optional **`context.md`** in `DIR`, the directory that receives
+the digest outputs. This is a user-owned file: the user
 may create or update it to describe who the digest is for, current projects,
 research interests, nearby group or advisor lines, available testbeds, and desired
 framing. It is free-form Markdown with no required schema.
@@ -76,7 +87,7 @@ filters to the window, gates on primary category, tags each paper to a
 ring/topic, and prints a grouped Markdown digest (Core → Adjacent → Peripheral).
 
 ```bash
-python3 scripts/fetch_arxiv.py --days 7
+python3 <skill-dir>/scripts/fetch_arxiv.py --days 7
 ```
 
 Flags: `--days N` (window, default 7), `--max-per-cat N` (cap on results pulled,
@@ -178,11 +189,11 @@ Run the helper to get the raw author/affiliation text:
 
 ```bash
 # curated subset straight from the fetch output (skips peripheral tier)
-python3 scripts/fetch_arxiv.py --days 7 --curated-json \
-  | python3 scripts/affiliations.py --from-json --curated
+python3 <skill-dir>/scripts/fetch_arxiv.py --days 7 --curated-json \
+  | python3 <skill-dir>/scripts/affiliations.py --from-json --curated
 
 # or pass ids explicitly
-python3 scripts/affiliations.py 2607.13604 2607.13276 ...
+python3 <skill-dir>/scripts/affiliations.py 2607.13604 2607.13276 ...
 ```
 
 It emits `{id: {"block": "<raw author/affiliation text>", "emails": [...],
@@ -248,8 +259,9 @@ primary category, arXiv id, and a 1–2 sentence takeaway. Render Peripheral ter
 (title + one-liner; affiliation optional). If a section is empty after curation,
 say so briefly rather than padding it.
 
-**Output files.** Write the week's digest to the repo root as
-`digest-YYYY-Www.{json,md,html}` (ISO week):
+**Output files.** Write the week's digest into `DIR` as
+`digest-YYYY-Www.{json,md,html}` (ISO week). Read the previous digest JSON in
+`DIR` for its `open_threads` before writing this week's:
 
 1. Assemble the curated content — rings/topics/papers with cleaned affiliations
    and sectors, plus the week-in-review and highlights prose — into
@@ -259,7 +271,7 @@ say so briefly rather than padding it.
    the style is identical every week:
 
    ```bash
-   python3 scripts/render_html.py digest-YYYY-Www.json -o digest-YYYY-Www.html
+   python3 <skill-dir>/scripts/render_html.py DIR/digest-YYYY-Www.json --out-dir DIR
    ```
 
    The CSS/layout is frozen inside `render_html.py`; to restyle *all* digests,

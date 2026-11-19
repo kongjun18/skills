@@ -1,6 +1,6 @@
 # Final Deliverable Schemas
 
-Schemas for every output the skill produces. The validator in `scripts/validate_outputs.py` enforces required fields. Do not invent new fields silently; if a new field is needed, add it here first.
+Schemas for every output the skill produces, relative to the run workspace (`--out DIR`). The validator in `scripts/validate_outputs.py` enforces required fields. Do not invent new fields silently; if a new field is needed, add it here first.
 
 ## Coverage Ledger
 
@@ -31,7 +31,7 @@ Rules:
 Source: {accepted papers URL}. Completeness: {from coverage_ledger.md}.
 
 - **{Paper Title}** — {first-author last name} et al.
-  - Curated tags: {≤3 tags from §5 taxonomy; or "other (subtopic: ...)"}
+  - Curated tags: {≤3 tags from [the taxonomy](taxonomy-and-priority.md); or "other (subtopic: ...)"}
   - Claim: {one sentence — what the paper says it achieved}
   - Pain: {one sentence — quoted "future work" / "we assume" / "in practice" snippet, OR "—"}
   - PDF: papers/{venue}/{year}/{slug}.pdf  (or "metadata-only: {reason}")
@@ -39,7 +39,7 @@ Source: {accepted papers URL}. Completeness: {from coverage_ledger.md}.
 
 Rules:
 - No abstract pasting. The digest replaces the old per-paper abstract dump.
-- `Curated tags` must come from the §5 taxonomy. The keyword-seed list from `metadata.jsonl` is *not* sufficient.
+- `Curated tags` must come from [the taxonomy](taxonomy-and-priority.md). The keyword-seed list from `metadata.jsonl` is *not* sufficient.
 - `Pain` must be a quote when possible; if the paper has no surfaced pain, write `—` (the validator will not flag `—`).
 
 ## Venue Read
@@ -98,7 +98,7 @@ Forbidden: `infer from`, `look for`, `refine after`, `What this venue appears to
 - Most important topics: {tag: cross-venue prevalence ratio = (venues_with_tag / venues_covered); only tags with ratio ≥ 0.5}
 - Cross-venue topics: {tag — list of venues where it dominated, with at least one digest-line citation per venue}
 - Venue-specific topics: {tag — venue, with one digest-line citation; only if the tag dominated in exactly one venue}
-- Why these topics matter: {≤3 sentences linking ratios to the §7 lenses}
+- Why these topics matter: {≤3 sentences linking ratios to the [lenses](idea-lenses.md)}
 - Papers anchoring the analysis: {≤5 titles per topic, each with venue and curated tags}
 ```
 
@@ -128,7 +128,7 @@ Forbidden: `infer from`, `look for`, `refine after`, `What this venue appears to
 ## {Trend Name}
 
 - Evidence venues: {≥2 venue_reads citations}
-- Lens applied: {one of L1–L11 from SKILL.md §7}
+- Lens applied: {one of L1–L11 from [idea-lenses.md](idea-lenses.md)}
 - Trend: {≤4 sentences naming the changed workload/hardware/scale, and what abstraction it strains}
 - Open question: {one sentence — the question this trend raises but does not answer}
 ```
@@ -142,7 +142,7 @@ Forbidden: `infer from`, `look for`, `refine after`, `What this venue appears to
 
 - Status: {vague | promising | solo-signal | not-yet-falsifiable | killed-by-critic | survived}
 - Lens applied: {one or two of L1–L11}
-- Related topics: {tags from §5 taxonomy}
+- Related topics: {tags from the taxonomy}
 - Observed mismatch: "{verbatim quote ≤2 sentences from one paper}" — {Paper Title} ({Venue Year}), {section}
 - Cross-paper corroboration: "{quote from a DIFFERENT paper hitting the same pain}" — {Paper Title} ({Venue Year}), {section}.
   IF NONE: set Status to `solo-signal` and write "none found — single-paper signal".
@@ -155,9 +155,9 @@ Forbidden: `infer from`, `look for`, `refine after`, `What this venue appears to
 ```
 
 Rules:
-- The Observed mismatch quote must be findable in `papers/metadata.jsonl` (validator gate §10.C).
+- The Observed mismatch quote must satisfy the checkable-quote rule in SKILL.md (validator gate C).
 - Do not reuse the same `Why it might matter` sentence across sparks.
-- The set of cited papers must differ by >50% from every other spark file (validator gate §10.D).
+- The set of cited papers must differ by >50% from every other spark file (validator gate D).
 
 ## Detailed Research Idea
 
@@ -167,8 +167,8 @@ Rules:
 ## {Idea Title}
 
 - One-sentence idea: {one plain sentence naming artifact, workload, mechanism, baseline, metric, and falsifier}
-- Lens applied: {one or two of L1–L11 from SKILL.md §7}
-- Relevant topics: {tags from §5 taxonomy}
+- Lens applied: {one or two of L1–L11 from [idea-lenses.md](idea-lenses.md)}
+- Relevant topics: {tags from the taxonomy}
 - Key papers (each with role tag):
   - {Title} ({Venue Year}) — motivating: {one sentence on why}
   - {Title} ({Venue Year}) — corroborating: {one sentence on why}
@@ -181,7 +181,7 @@ Rules:
 - Workload or architecture mismatch: {pick L1 specifically: workload/hardware/scale/operations}
 - Why now: {what changed in the last 2 years that makes this idea timely; cite ≥1 paper}
 - Core research question: {one sentence, falsifiable}
-- Baseline that breaks: {specific stack + workload + metric. e.g. "vLLM v0.6 + FAISS + Postgres under 1% per-minute row churn at 32k context — recall drops to X% within Y minutes"}
+- Baseline that breaks: {specific stack + workload + metric. e.g. "{serving engine} + {ANN library} + {relational store} under 1% per-minute row churn — recall drops to X% within Y minutes"}
 - What this idea is NOT: {≤3 sentences naming scope creep to avoid}
 - Closest prior art: {2–5 papers, each on one line: "{Title} ({Venue Year}) — how this differs / what they leave open". Populated by the Step 6a novelty check.}
 - Rough feasibility: {≤3 sentences. Name the prototype stack and the experiment that would settle the core question.}
@@ -197,25 +197,7 @@ Rules:
 
 Rules:
 - `One-sentence idea` is required and must be specific enough that a student can start implementing or measuring it this week.
-- ≥3 papers, each with a role tag. Flat title lists are rejected (validator gate §10.I).
+- ≥3 papers, each with a role tag. Flat title lists are rejected (validator gate I).
 - `Baseline that breaks` must be a concrete stack and workload, not "trace-driven evaluation".
 - `Closest prior art` must list 2–5 real papers from `papers/metadata.jsonl` or from the web-search novelty check (in which case cite the source URL).
 - Citing papers that do not appear in `papers/metadata.jsonl` is rejected *unless* they are listed under `Closest prior art` with a URL — the novelty check is expected to reach outside the scrape window.
-
-## Idea Identification Lens (apply when drafting any spark or idea)
-
-For every trend, spark, or detailed idea, ask:
-
-- L1 — What mismatch changed: workload/software, hardware/software, scale/assumption, or operations/abstraction?
-- L2 — What unnamed pain did a paper mention vaguely? (Quote it.)
-- L3 — Is this structural, or only an incremental optimization?
-- L4 — Does the topic recur across venues? (List them.)
-- L5 — What did current papers ignore: multi-tenancy, recovery, freshness, observability, cost, correctness, durability, security, or deployment?
-- L6 — Is this a bottleneck caused by the success of a new system pattern?
-- L7 — Are solutions fragmented across storage, networking, scheduling, database, and OS communities?
-- L8 — Operational reality: skew, failures, noisy neighbors, tail latency, upgrades, cost?
-- L9 — Topic vs idea: have you named a missing abstraction, or only a research area?
-- L10 — What is the falsifiable claim, and what observation would weaken it?
-- L11 — What user-space workaround reveals a missing OS, network, runtime, or database primitive?
-
-Record the one or two lenses you used as `Lens applied:`.
