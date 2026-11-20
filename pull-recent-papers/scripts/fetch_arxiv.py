@@ -8,12 +8,12 @@ Markdown digest ordered by tier, then topic.
 Categories, tiers, topics, and window defaults come from a TOML config:
 `--config PATH`, else the user config at
 `${XDG_CONFIG_HOME:-~/.config}/agent-skills/pull-recent-papers/config.toml`,
-else the bundled `assets/default-config.toml` (a storage-systems taxonomy).
+else the bundled `assets/default-config.toml` (a field-neutral taxonomy).
 
-The reader context file is resolved as `[reader] context_file` (default
-`context.md`, relative to the config directory) if it exists, else the
-user-profile skill's `agent-skills/user-profile/profile.md` if it exists, else
-none.
+The reader context file is the first that exists of: `[reader] context_file`
+(relative to the config directory), the user-profile skill's
+`agent-skills/user-profile/profile.md`, and this skill's own `context.md` in
+the config directory.
 
 Usage:
     python3 fetch_arxiv.py [--config PATH] [--days N | --since TIME] [--max-per-cat N] [--json]
@@ -90,9 +90,10 @@ def load_config(path: Path) -> dict:
     # context sits next to their config regardless of the working directory.
     # The bundled default points into the user config directory instead.
     base = USER_CONFIG.parent if path.resolve() == DEFAULT_CONFIG else path.resolve().parent
-    own = base / cfg.get("reader", {}).get("context_file", "context.md")
-    cfg["_own_context"] = own
-    cfg["_context_path"] = own if own.exists() else USER_PROFILE if USER_PROFILE.exists() else None
+    explicit = cfg.get("reader", {}).get("context_file")
+    candidates = ([base / explicit] if explicit else []) + [USER_PROFILE, base / "context.md"]
+    cfg["_context_candidates"] = candidates
+    cfg["_context_path"] = next((c for c in candidates if c.exists()), None)
     return cfg
 
 
@@ -107,13 +108,12 @@ def show_config(path: Path, cfg: dict) -> None:
     for cat, allowed in digest.get("strict_categories", {}).items():
         print(f"strict:     {cat} kept only for: {', '.join(allowed)}")
     print(f"window:     {digest.get('days', 7)} days, max {digest.get('max_results', 200)} results")
-    ctx, own = cfg["_context_path"], cfg["_own_context"]
-    if ctx == USER_PROFILE:
-        print(f"context:    {ctx}  (user profile; {own} missing)")
-    elif ctx:
-        print(f"context:    {ctx}")
+    ctx = cfg["_context_path"]
+    if ctx:
+        print(f"context:    {ctx}" + ("  (user profile)" if ctx == USER_PROFILE else ""))
     else:
-        print(f"context:    (none; {own} and {USER_PROFILE} missing)")
+        missing = ", ".join(str(c) for c in cfg["_context_candidates"])
+        print(f"context:    (none; missing: {missing})")
     interests = '; '.join(reader.get('interests', [])) or '(none)'
     if ctx and reader.get('interests'):
         interests = f"(ignored: the reader context is the source of interests) {interests}"

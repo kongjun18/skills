@@ -13,7 +13,7 @@ them into prose.
 | Section | Customizes | Used by |
 |---|---|---|
 | `[digest]` | area: `title`, `field`, arXiv `categories`, `strict_categories`, `days`, `max_results` | script + agent |
-| `[reader]` | `context_file` (Markdown, relative to `$CONF`, default `context.md`), `author_names`, and `interests` (only used when no reader context exists; see Reader context in SKILL.md) | script resolves the context path; agent reads it |
+| `[reader]` | `context_file` (optional Markdown path, relative to `$CONF`), `author_names`, and `interests` (only used when no reader context exists; see Reader context in SKILL.md) | script resolves the context path; agent reads it |
 | `[ranking]` | `preferences` for ordering papers within a topic | agent |
 | `[[tiers]]` | priority bands in display order; exactly one `catch_all` tier | script + agent |
 | `[[topics]]` | topics in match order, each with a `tier`, regex `patterns`, and optional `exclude` patterns that veto the topic | script |

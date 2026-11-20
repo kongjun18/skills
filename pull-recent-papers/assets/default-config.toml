@@ -8,16 +8,16 @@
 # They are matched case-insensitively against title + abstract.
 
 [digest]
-title = "arXiv Storage-Systems Digest"
+title = "arXiv Systems Digest"
 # Primary field the digest serves; used to judge relevance during curation.
-field = "storage systems"
+field = "computer systems"
 # arXiv categories to query. A paper is kept only if its *primary* category is
 # one of these (cross-lists from other fields are dropped).
 categories = ["cs.DB", "cs.OS", "cs.DC", "cs.AR", "cs.PF"]
 # Optional high-volume neighbors pulled for only a few topics: a paper whose
 # primary category is a key here is kept only if it lands in one of the listed
 # topics. Each key must also be in `categories`. Example:
-#   strict_categories = { "cs.LG" = ["Storage for AI"] }
+#   strict_categories = { "cs.LG" = ["ML systems"] }
 strict_categories = {}
 days = 7
 # Results pulled from the combined query, newest first; raise it when adding
@@ -26,10 +26,10 @@ max_results = 600
 
 [reader]
 # Optional free-form Markdown briefing (background, interests, current work,
-# resources), relative to this config file's directory. Default "context.md".
-# If the file is missing, the user-profile skill's profile.md is used when it
-# exists; otherwise there is no context.
-# context_file = "context.md"
+# resources), relative to this config file's directory. When unset or missing,
+# the user-profile skill's profile.md is used if it exists, else context.md
+# next to this file.
+# context_file = "my-context.md"
 # Short interest phrases, only for readers with no context file. When a reader
 # context exists, it is the source of interests and this list is ignored.
 # Used to flag connections, not to filter.
@@ -48,151 +48,128 @@ preferences = [
 
 # Tiers, in display priority order. Exactly one tier must set catch_all = true:
 # papers that match no topic land there and render terse (title + one line).
+# This default is field-neutral: one tier for every topic, ordered by the
+# reader context at curation time. Split topics into tiers (for example core
+# and adjacent) when customizing for a field.
 [[tiers]]
-id = "core"
-title = "Core storage"
-description = "the primary field: core storage"
+id = "topics"
+title = "Systems"
+description = "papers that match a topic"
 
 [[tiers]]
-id = "adjacent"
-title = "Storage-facing adjacent"
-description = "adjacent fields, only where they touch storage, data, or memory movement"
-
-[[tiers]]
-id = "peripheral"
-title = "Peripheral (skim only)"
-description = "in-category papers with no storage angle"
+id = "other"
+title = "Other (skim only)"
+description = "in-category papers that match no topic"
 catch_all = true
 
-# Topics, in match order: the first matching topic wins, so list the most
-# specific / most central topics first. Match order is independent of tiers
-# (display groups by tier, then this order), so a lower-tier topic can be
-# listed early to claim its papers before broad core patterns do. Each topic
-# belongs to one tier and has `patterns`; optional `exclude` patterns veto the
-# topic (the paper falls through to later topics), as in "Storage systems" below.
+# Topics, in match order: the first matching topic wins, so list specific
+# topics before broad ones. Each topic belongs to one tier and has `patterns`;
+# optional `exclude` patterns veto the topic (the paper falls through to later
+# topics), for example:
+#   exclude = ['jailbreak', 'prompt injection']
 
-# ==== Core storage ====
 [[topics]]
-label = "Storage for AI"
-tier = "core"
+label = "Memory systems & disaggregation"
+tier = "topics"
+patterns = [
+  '\bCXL\b', 'persistent memory', '\bPMEM\b', '\bNVM\b', 'memory disaggregat',
+  'disaggregated memory', 'far memory', 'tiered memory', 'memory tiering',
+  'byte[\s-]?addressable', 'memory management', 'page (fault|table|migration)',
+  'paging', 'swap', 'virtual memory', 'memory virtualization', '\bNUMA\b',
+]
+
+[[topics]]
+label = "ML systems"
+tier = "topics"
 patterns = [
   'kv[\s-]?cache', 'kvcache', 'key[\s-]?value cache', 'attention cache',
-  'cache offload', 'prefix cach', 'paged attention',
-  'model (checkpoint|loading)', 'checkpoint(ing)? .*(train|LLM|model)',
-  '\bRAG (serving|system|pipeline|index|storage|database|retrieval)',
-  'vector (store|storage|database|index)',
-  '(vector search|nearest[\s-]neighbor).*(SSD|disk|NVMe|storage)',
-  '(SSD|disk|NVMe|storage).*(vector search|nearest[\s-]neighbor)',
-  'llm (memory|storage)',
+  'prefix cach', 'paged attention', 'llm (serving|inference|memory|storage)',
+  '\bvLLM\b', 'continuous batching', '(request|inference|token) schedul',
+  'speculative decod', 'disaggregated (prefill|inference)',
+  'serving (system|engine)', 'model (checkpoint|loading|parallel)',
+  '(distributed|large[\s-]?scale) training', '\bRAG\b',
+  'vector (store|storage|database|index|search)',
 ]
 
 [[topics]]
-label = "I/O layer & OS storage stack"
-tier = "core"
+label = "Storage & I/O stack"
+tier = "topics"
 patterns = [
-  'io_uring', 'block (device|layer)', 'page cache',
-  'file ?system', '\bNVMe\b', '^(?!.*(state[\s-]space|\bMamba)).*\bSSDs?\b', '\bflash[\s-](memory|storage|based|array|cache|chip|device|translation)', '\bNAND\b', '\bFTL\b',
-  '\bZNS\b', 'shingled magnetic', '\bSMR (disk|drive|HDD)s?\b', '\bext4\b', '\bXFS\b', '\bF2FS\b',
-  '\bI/?O (stack|path|scheduler|layer)', 'direct I/?O',
-]
-
-[[topics]]
-label = "Memory & disaggregation"
-tier = "core"
-patterns = [
-  '\bCXL\b', 'persistent memory', '\bPMEM\b', '\bNVM\b',
-  'memory disaggregat', 'disaggregated memory', 'far memory',
-  'tiered memory', 'memory tiering', 'byte[\s-]?addressable',
-  'unified (virtual )?memory', 'memory oversubscription', '\bUVM\b',
-]
-
-[[topics]]
-label = "Storage systems"
-tier = "core"
-patterns = [
+  'io_uring', 'block (device|layer)', 'page cache', 'file ?system', '\bNVMe\b',
+  '\bSSD\b', '\bflash\b', '\bFTL\b', '\bZNS\b', '\bSMR\b', '\bext4\b',
+  '\bXFS\b', '\bF2FS\b', '\bI/?O (stack|path|scheduler|layer)', 'direct I/?O',
   '\bstorage\b', 'object storage', 'key[\s-]?value store', '\bKV store\b',
-  '\bRDMA\b', '(data|storage|block|chunk|file|backup)[\s-]+(level\s+)?deduplicat',
-  'erasure cod', '\bRAID\b',
-  'disaggregated (storage|database)s?', 'storage disaggregat', 'tiered storage',
-  'distributed storage',
-  'caching', 'cache (system|hierarchy|coherence)',
-  'storage (encryption|security)', 'storage energy', 'storage carbon',
-]
-# On-chip hardware caches and register files are not storage systems.
-exclude = [
-  'register (file|storage)', '\bTLBs?\b', 'last[\s-]level cache', '\bLLC\b',
-  'on[\s-]chip (cache|memory|storage)', '\bL[123] cache', 'branch predict',
+  'deduplicat', 'erasure cod', '\bRAID\b', 'tiered storage', 'caching',
+  'cache (system|hierarchy)',
 ]
 
 [[topics]]
-label = "Distributed storage & consistency"
-tier = "core"
+label = "Storage engines & data formats"
+tier = "topics"
 patterns = [
-  '(data|state|log|storage|database|object|chunk|block|primary[\s-]backup|chain|geo|state[\s-]machine)[\s-]+replicat',
-  'replicat(ed|ion) (storage|database|log|state[\s-]machine|data|store|key)',
-  'replication (protocol|factor|lag)', 'consensus', '\bRaft\b', '\bPaxos\b', 'quorum',
-  'linearizab', 'distributed transaction', 'atomic commit', '\b2PC\b',
-  'sharding', 'partition(ing|ed) (data|store|table)',
-  'consistency (model|protocol)',
+  'storage engine', 'buffer (pool|manager|management)', '\bB[\+\-]?tree',
+  'LSM[\s-]?tree', '\bWAL\b', 'write[\s-]?ahead log', 'on[\s-]?disk index',
+  'columnar', 'data warehouse', '\bParquet\b', '\bIceberg\b', 'lakehouse',
+  'data (lake|format)', 'checkpoint', 'recovery (log|manager)',
 ]
 
 [[topics]]
-label = "DB storage engine"
-tier = "core"
+label = "Databases: query & transactions"
+tier = "topics"
 patterns = [
-  'storage engine', 'buffer (pool|manager|management)',
-  '\bB[\+\-]?tree', 'LSM[\s-]?tree', '\bWAL\b', 'write[\s-]?ahead log',
-  'on[\s-]?disk index', 'columnar', 'data warehouse',
-  '\bParquet\b', '\bIceberg\b', 'lakehouse', '\b(table|file|columnar) formats?\b',
-  '(database|DBMS|fuzzy) checkpoint', 'checkpoint(ing)? and recovery', 'recovery (log|manager)',
-]
-
-
-# ==== Storage-facing adjacent ====
-[[topics]]
-label = "Databases (query/txn)"
-tier = "adjacent"
-patterns = [
-  '(?<!physical )\bdatabase', '\bdbms\b', '\bOLAP\b', '\bOLTP\b',
+  '\bdatabase', '\bdbms\b', '\bOLAP\b', '\bOLTP\b',
   '\bquery (optimiz|processing|engine|plan|execution)', '\bSQL\b',
-  '\btransaction(?!s on\b)', '\bindex(ing|es)?\b', 'vector search',
-  'join (order|algorithm)', 'cardinality estimat', 'data lakes?',
+  'transaction', '\bindex(ing|es)?\b', 'join (order|algorithm)',
+  'cardinality estimat',
 ]
 
 [[topics]]
-label = "Distributed data processing"
-tier = "adjacent"
+label = "Distributed systems & consistency"
+tier = "topics"
 patterns = [
-  'map[\s-]?reduce', '(?<!DGX )\bSpark\b', '(distributed|streaming) dataflow',
-  'dataflow (system|engine|framework|runtime|pipeline)s?', '\bstream processing',
+  'replicat', 'consensus', '\bRaft\b', '\bPaxos\b', 'quorum', 'linearizab',
+  'atomic commit', '\b2PC\b', 'sharding',
+  'partition(ing|ed) (data|store|table)', 'consistency (model|protocol)',
+  'coordination service', '\bZooKeeper\b', 'fault[\s-]?toleran',
+]
+
+[[topics]]
+label = "Data processing & streaming"
+tier = "topics"
+patterns = [
+  'map[\s-]?reduce', '\bSpark\b', 'dataflow', 'stream processing',
   'batch processing', 'data (pipeline|processing) (system|framework)',
-  'coordination service', '\bZooKeeper\b', 'distributed (query|join|compute)',
+  'distributed (query|join|compute)',
 ]
 
 [[topics]]
-label = "LLM inference systems"
-tier = "adjacent"
+label = "Cloud & serverless"
+tier = "topics"
 patterns = [
-  'llm (serving|inference)', '\bvLLM\b', 'continuous batching',
-  '(request|inference|token) schedul', 'speculative decod',
-  'disaggregated (prefill|inference)', 'serving (system|engine)',
-  'quantiz', 'model parallel',
+  '\bcloud\b', 'serverless', '\bFaaS\b', 'datacenter', 'multi[\s-]?tenan',
+  '\bS3\b', 'resource (allocation|management)',
 ]
 
 [[topics]]
-label = "Cloud, storage-facing"
-tier = "adjacent"
+label = "Networking"
+tier = "topics"
 patterns = [
-  'cloud storage', '\bS3\b', 'serverless.*(state|storage|data)',
-  'stateful (serverless|function)', 'datacenter (storage|memory)',
-  'multi[\s-]?tenant (storage|database)', '\bFaaS\b.*(state|storage)',
+  '\bRDMA\b', 'SmartNIC', '\bDPU\b', 'network (stack|function)', '\bTCP\b',
+  'interconnect', 'congestion control',
 ]
 
 [[topics]]
-label = "OS, storage-facing"
-tier = "adjacent"
+label = "Architecture & accelerators"
+tier = "topics"
 patterns = [
-  'memory management', 'paging', 'page (fault|table|migration)',
-  'swap', 'virtual memory', 'memory virtualization',
-  'storage virtualization', '\bNUMA\b',
+  '\bFPGA\b', 'accelerat', '\bGPU\b', 'processor', 'microarchitect',
+  'cache coherence', 'processing[\s-]in[\s-]memory', '\bPIM\b',
+]
+
+[[topics]]
+label = "Performance & reliability"
+tier = "topics"
+patterns = [
+  'benchmark', 'profil', 'tail latency', 'performance (model|analysis)',
+  'failure', 'reliab', 'energy',
 ]

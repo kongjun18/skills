@@ -2,7 +2,7 @@
 name: pull-recent-papers
 description: >-
   Configurable weekly arXiv digest and research radar: fetch a recent window of preprints for chosen arXiv
-  categories (the bundled default is a storage-systems taxonomy over cs.DB/OS/DC/AR/PF), classify them against a
+  categories (the bundled default is a field-neutral systems taxonomy over cs.DB/OS/DC/AR/PF), classify them against a
   custom tier/topic taxonomy, evaluate them, and write a week-in-review with highlights and directions as JSON,
   Markdown, and frozen-style HTML in a user-chosen digest directory. Settings live in a per-user TOML config, and an
   optional reader context frames the digest without filtering it. Use for "weekly digest", "arXiv roundup", "what's
@@ -48,8 +48,8 @@ The scripts use only the Python standard library (3.11+ for `tomllib`), plus
 
 Everything field- or reader-specific lives in one TOML file. The fetch script
 uses `--config PATH`, else `$CONF/config.toml`, else the bundled
-[`assets/default-config.toml`](assets/default-config.toml) (a storage-systems
-taxonomy with no personal settings). Sections: `[digest]` (title, field,
+[`assets/default-config.toml`](assets/default-config.toml) (a field-neutral
+systems taxonomy with no personal settings). Sections: `[digest]` (title, field,
 categories, `strict_categories`, window), `[reader]` (`context_file`,
 `author_names`, and `interests` for readers without a context file),
 `[ranking]` (within-topic preferences),
@@ -90,13 +90,14 @@ default stays generic; personal settings go only in `$CONF`.
 The reader context is free-form Markdown about who the digest is for. The fetch
 script resolves it (`--show-config` prints the result) in this order:
 
-1. `[reader] context_file`, relative to the config's directory (default
-   `$CONF/context.md`), if the file exists;
+1. `[reader] context_file`, relative to the config's directory, if it is set
+   and the file exists;
 2. else `${XDG_CONFIG_HOME:-~/.config}/agent-skills/user-profile/profile.md`,
    the user's personal profile kept by the separate `user-profile` skill, if it
    exists (read it only: never write, commit, or track it; this skill does
    not need that skill installed);
-3. else no context.
+3. else `$CONF/context.md`, this skill's own context, if it exists;
+4. else no context.
 
 When there is no context at all, offer once to create `$CONF/context.md`: ask a
 few short questions following the sections of
