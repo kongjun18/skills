@@ -1,6 +1,6 @@
 # T3 Synthesis: Landscape, Clusters, Generality, Cards
 
-Read this when running Step 6 of the workflow. T3 reads only derived files (`metrics/`, `digests/`) and, for a specific claim, single items from the database; it never reads raw batches in bulk.
+Read this when running Step 6 of the workflow. T3 reads only derived files (`work/metrics/`, `work/digests/`) and, for a specific claim, single items from the database; it never reads raw batches in bulk.
 
 ## 1. Component landscape
 
@@ -21,7 +21,7 @@ Also read `direction_root_causes.csv`: a component whose analyzed items are most
 
 ## 2. Pain clusters
 
-Read `digests/digest-<direction>.md`. Group items by **mechanism**, not keyword: two items belong together when the same cause produces them (for example "manifest rewrite cost grows with fragment count"). Keep a cluster only if it has at least two independent reporters, or one maintainer statement of a design limit or tradeoff. For each cluster record: items, components, root-cause mix, resolution mix, first and last dates, and whether it recurred after a fix.
+Read `work/digests/digest-<direction>.md`. Group items by **mechanism**, not keyword: two items belong together when the same cause produces them (for example "manifest rewrite cost grows with fragment count"). Keep a cluster only if it has at least two independent reporters, or one maintainer statement of a design limit or tradeoff. For each cluster record: items, components, root-cause mix, resolution mix, first and last dates, and whether it recurred after a fix.
 
 ## 3. Generality test
 
@@ -80,4 +80,4 @@ Then run `scout.py verify-cards --study S cards/*.md` and fix every failure. It 
 
 ## 6. Hand to the report
 
-Write the exploration report with the `exploration-report` skill. Map each study direction to a scorecard row and each card to a finding or open question. Cite the snapshot (`scout.py snapshot`) as raw data; tag issue-derived claims `[cited: <url>]` and census counts `[measured]` with the snapshot path. Issue reports are third-party evidence, not reproduction.
+Write the exploration report with the `exploration-report` skill. Map each study direction to a scorecard row and each card to a finding or open question. Cite the snapshot (`scout.py snapshot`) as raw data, and put every number the reader needs into the report as a table rather than pointing at the snapshot; tag issue-derived claims `[cited: <url>]` and census counts `[measured]` with the snapshot path. Issue reports are third-party evidence, not reproduction.

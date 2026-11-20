@@ -19,10 +19,10 @@ Commands:
   select    --study S [--repo R --query "kw1,kw2" --name NAME --limit N]
   export    --study S --stage t1|t2 [--max-items N] [--max-tokens N]
   ingest    --study S --batch B.json RESULTS.jsonl [--model M] [--effort E]
-  metrics   --study S --out DIR
+  metrics   --study S --out DIR | --from-snapshot SNAP.sqlite --out DIR
   digest    --study S --out DIR
   verify-cards --study S CARD.md...
-  snapshot  --study S --out DIR
+  snapshot  --study S --out SNAP.sqlite
   status    --study S
   registry
 """
@@ -600,48 +600,71 @@ def pct(values, p):
     return round(s[min(len(s) - 1, int(p * len(s)))], 1)
 
 
-def metrics(cfg: dict, out: Path) -> None:
-    out.mkdir(parents=True, exist_ok=True)
-    ref = now()
+CQ_COLS = ["repo", "component", "quarter", "kind", "opened", "open_now", "closed_or_merged",
+           "closed_within_90d_frac", "median_days_to_close", "p90_days_to_close",
+           "distinct_authors", "maintainer_authored", "reverts", "bug_labeled"]
+RC_COLS = ["repo", "direction", "component", "root_cause", "resolution", "generality", "items"]
+
+
+def gather_live(cfg: dict) -> tuple[list[dict], list[tuple[str, dict]]]:
+    """Census items created in the window (with component) and the latest T2 analysis per item."""
+    items, t2 = [], []
+    for repo in cfg["targets"] + cfg["peers"]:
+        try:
+            con = connect(repo)
+        except SystemExit:
+            continue
+        if repo in cfg["targets"]:
+            for r in con.execute("SELECT * FROM items WHERE created_at>=?", (cfg["window_start"],)).fetchall():
+                items.append({**dict(r), "component": component_of(con, cfg, r)})
+        for (key,) in con.execute("SELECT DISTINCT item_key FROM analyses WHERE study=? AND stage='t2'", (cfg["id"],)):
+            t2.append((repo, latest_analysis(con, cfg["id"], "t2", key)))
+    return items, t2
+
+
+def gather_snapshot(path: Path) -> tuple[list[dict], list[tuple[str, dict]], str]:
+    con = sqlite3.connect(path)
+    con.row_factory = sqlite3.Row
+    computed_at = con.execute("SELECT v FROM manifest WHERE k='computed_at'").fetchone()[0]
+    items = [dict(r) for r in con.execute("SELECT * FROM items WHERE in_census=1")]
+    t2 = [(r["item_key"].split("#")[0], json.loads(r["result"])) for r in con.execute(
+        "SELECT item_key, result FROM analyses a WHERE stage='t2' AND ingested_at="
+        "(SELECT MAX(ingested_at) FROM analyses b WHERE b.stage='t2' AND b.item_key=a.item_key)")]
+    return items, t2, computed_at
+
+
+def metric_tables(items: list[dict], t2: list[tuple[str, dict]], ref: str) -> tuple[list[list], list[list]]:
     groups = defaultdict(list)
-    census = {"window_start": cfg["window_start"], "computed_at": ref, "repos": {}}
-    for repo in cfg["targets"]:
-        con = connect(repo)
-        rows = con.execute("SELECT * FROM items WHERE created_at>=?", (cfg["window_start"],)).fetchall()
-        census["repos"][repo] = dict(Counter(f"{r['kind']}:{r['state']}" for r in rows))
-        for r in rows:
-            groups[(repo, component_of(con, cfg, r), quarter(r["created_at"]), r["kind"])].append(r)
-    with (out / "component_quarter.csv").open("w", newline="") as f:
-        w = csv.writer(f)
-        w.writerow(["repo", "component", "quarter", "kind", "opened", "open_now", "closed_or_merged",
-                    "closed_within_90d_frac", "median_days_to_close", "p90_days_to_close",
-                    "distinct_authors", "maintainer_authored", "reverts", "bug_labeled"])
-        for (repo, comp, q, kind), rs in sorted(groups.items()):
-            closed = [days_between(r["created_at"], r["closed_at"]) for r in rs if r["closed_at"]]
-            mature = [r for r in rs if days_between(r["created_at"], ref) >= 90]
-            within = sum(1 for r in mature if r["closed_at"] and days_between(r["created_at"], r["closed_at"]) <= 90)
-            w.writerow([repo, comp, q, kind, len(rs), sum(r["state"] == "OPEN" for r in rs), len(closed),
-                        round(within / len(mature), 3) if mature else "", pct(closed, 0.5), pct(closed, 0.9),
-                        len({r["author"] for r in rs}), sum(r["author_assoc"] in MAINTAINER for r in rs),
-                        sum(r["title"].lower().startswith("revert") for r in rs),
-                        sum(any("bug" in lb.lower() for lb in json.loads(r["labels"])) for r in rs)])
-    with (out / "direction_root_causes.csv").open("w", newline="") as f:
-        w = csv.writer(f)
-        w.writerow(["repo", "direction", "component", "root_cause", "resolution", "generality", "items"])
-        counts = Counter()
-        for repo in cfg["targets"] + cfg["peers"]:
-            try:
-                con = connect(repo)
-            except SystemExit:
-                continue
-            for (key,) in con.execute("SELECT DISTINCT item_key FROM analyses WHERE study=? AND stage='t2'", (cfg["id"],)):
-                a = latest_analysis(con, cfg["id"], "t2", key)
-                for d in a["directions"]:
-                    counts[(repo, d, a["component"], a["root_cause"], a["resolution"], a["generality"])] += 1
-        for k, v in sorted(counts.items()):
-            w.writerow([*k, v])
-    (out / "census.json").write_text(json.dumps(census, indent=2) + "\n")
-    print(f"wrote {out}/component_quarter.csv, direction_root_causes.csv, census.json")
+    for r in items:
+        groups[(r["repo"], r["component"], quarter(r["created_at"]), r["kind"])].append(r)
+    cq = []
+    for (repo, comp, q, kind), rs in sorted(groups.items()):
+        closed = [days_between(r["created_at"], r["closed_at"]) for r in rs if r["closed_at"]]
+        mature = [r for r in rs if days_between(r["created_at"], ref) >= 90]
+        within = sum(1 for r in mature if r["closed_at"] and days_between(r["created_at"], r["closed_at"]) <= 90)
+        cq.append([repo, comp, q, kind, len(rs), sum(r["state"] == "OPEN" for r in rs), len(closed),
+                   round(within / len(mature), 3) if mature else "", pct(closed, 0.5), pct(closed, 0.9),
+                   len({r["author"] for r in rs}), sum(r["author_assoc"] in MAINTAINER for r in rs),
+                   sum(r["title"].lower().startswith("revert") for r in rs),
+                   sum(any("bug" in lb.lower() for lb in json.loads(r["labels"])) for r in rs)])
+    counts = Counter((repo, d, a["component"], a["root_cause"], a["resolution"], a["generality"])
+                     for repo, a in t2 for d in a["directions"])
+    return cq, [[*k, v] for k, v in sorted(counts.items())]
+
+
+def metrics(cfg: dict | None, out: Path, from_snapshot: Path | None = None) -> None:
+    if from_snapshot:
+        items, t2, ref = gather_snapshot(from_snapshot)
+    else:
+        (items, t2), ref = gather_live(cfg), now()
+    cq, rc = metric_tables(items, t2, ref)
+    out.mkdir(parents=True, exist_ok=True)
+    for name, cols, rows in (("component_quarter.csv", CQ_COLS, cq), ("direction_root_causes.csv", RC_COLS, rc)):
+        with (out / name).open("w", newline="") as f:
+            w = csv.writer(f)
+            w.writerow(cols)
+            w.writerows(rows)
+    print(f"wrote {out}/component_quarter.csv, direction_root_causes.csv (reference time {ref})")
 
 
 def digest(cfg: dict, out: Path) -> None:
@@ -715,37 +738,57 @@ def verify_cards(paths: list[str]) -> None:
     sys.exit(1 if failures else 0)
 
 
+SNAP_ITEM_COLS = ["key", "repo", "number", "kind", "title", "url", "state", "state_reason", "author",
+                  "author_assoc", "created_at", "updated_at", "closed_at", "labels", "n_comments",
+                  "n_reactions", "links", "component", "in_census"]
+
+
 def snapshot(cfg: dict, out: Path) -> None:
-    out.mkdir(parents=True, exist_ok=True)
-    manifest = {"created_at": now(), "study": cfg["id"], "study_file_hash": cfg["_hash"],
-                "window_start": cfg["window_start"], "command": sys.argv,
-                "prompt_versions": {s: prompt_version(s) for s in BRIEFS}, "databases": {}}
-    meta_cols = ("key, repo, number, kind, title, url, state, state_reason, author, author_assoc, created_at, "
-                 "updated_at, closed_at, labels, n_comments, n_reactions, additions, deletions, files, links")
-    with (out / "census.jsonl").open("w") as fc, (out / "selections.csv").open("w", newline="") as fs, \
-            (out / "analyses.jsonl").open("w") as fa:
-        ws = csv.writer(fs)
-        ws.writerow(["repo", "item_key", "direction", "score"])
-        for repo in cfg["targets"] + cfg["peers"]:
-            try:
-                con = connect(repo)
-            except SystemExit:
-                continue
-            manifest["databases"][repo] = {
-                "path": str(db_path(repo)),
-                "meta": {r[0]: r[1] for r in con.execute("SELECT k, v FROM meta")},
-                "syncs": [dict(r) for r in con.execute("SELECT * FROM syncs ORDER BY id")]}
-            where = "created_at>=?" if repo in cfg["targets"] else "key IN (SELECT item_key FROM selections WHERE study=?)"
-            arg = cfg["window_start"] if repo in cfg["targets"] else cfg["id"]
-            for r in con.execute(f"SELECT {meta_cols} FROM items WHERE {where}", (arg,)):
-                fc.write(json.dumps(dict(r)) + "\n")
-            for r in con.execute("SELECT item_key, direction, score FROM selections WHERE study=?", (cfg["id"],)):
-                ws.writerow([repo, *r])
-            for r in con.execute("SELECT * FROM analyses WHERE study=?", (cfg["id"],)):
-                fa.write(json.dumps(dict(r)) + "\n")
-    (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
-    metrics(cfg, out)
-    print(f"snapshot written to {out}")
+    """Freeze the study's evidence into one SQLite file that `metrics --from-snapshot` reproduces from."""
+    if out.exists():
+        raise SystemExit(f"{out} exists; snapshots are never overwritten, use a new run id")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    ref = now()
+    items, t2 = gather_live(cfg)
+    snap = sqlite3.connect(out)
+    snap.executescript(f"""
+        CREATE TABLE manifest(k TEXT PRIMARY KEY, v TEXT);
+        CREATE TABLE items({", ".join(SNAP_ITEM_COLS)}, PRIMARY KEY(key));
+        CREATE TABLE selections(item_key, direction, score);
+        CREATE TABLE analyses(stage, item_key, input_hash, prompt_version, result, model, effort, ingested_at);
+        CREATE TABLE syncs(repo, pass, started_at, finished_at, window_start, stop_at, fetched, gh_version);
+        CREATE TABLE component_quarter({", ".join(CQ_COLS)});
+        CREATE TABLE direction_root_causes({", ".join(RC_COLS)});""")
+    put = lambda table, rows, n: snap.executemany(f"INSERT OR IGNORE INTO {table} VALUES({','.join('?' * n)})", rows)
+    put("items", [[r[c] for c in SNAP_ITEM_COLS[:-1]] + [1] for r in items], len(SNAP_ITEM_COLS))
+    for repo in cfg["targets"] + cfg["peers"]:
+        try:
+            con = connect(repo)
+        except SystemExit:
+            continue
+        sel = con.execute("SELECT item_key, direction, score FROM selections WHERE study=?", (cfg["id"],)).fetchall()
+        put("selections", sel, 3)
+        extra = con.execute(f"SELECT * FROM items WHERE key IN (SELECT item_key FROM selections WHERE study=?) "
+                            f"AND NOT (created_at>=? AND repo IN ({','.join('?' * len(cfg['targets']))}))",
+                            (cfg["id"], cfg["window_start"], *cfg["targets"])).fetchall()
+        put("items", [[r[c] for c in SNAP_ITEM_COLS[:-2]] + [component_of(con, cfg, r), 0] for r in extra],
+            len(SNAP_ITEM_COLS))
+        put("analyses", con.execute("SELECT stage, item_key, input_hash, prompt_version, result, model, effort, "
+                                    "ingested_at FROM analyses WHERE study=?", (cfg["id"],)).fetchall(), 8)
+        put("syncs", con.execute("SELECT repo, pass, started_at, finished_at, window_start, stop_at, fetched, "
+                                 "gh_version FROM syncs").fetchall(), 8)
+    cq, rc = metric_tables(items, t2, ref)
+    put("component_quarter", cq, len(CQ_COLS))
+    put("direction_root_causes", rc, len(RC_COLS))
+    manifest = {"created_at": now(), "computed_at": ref, "study": cfg["id"], "study_file_hash": cfg["_hash"],
+                "study_file": cfg["_path"].read_text(), "window_start": cfg["window_start"],
+                "targets": json.dumps(cfg["targets"]), "peers": json.dumps(cfg["peers"]),
+                "prompt_versions": json.dumps({s: prompt_version(s) for s in BRIEFS}),
+                "databases": json.dumps({r: load_registry().get(r, {}).get("db") for r in cfg["targets"] + cfg["peers"]})}
+    put("manifest", list(manifest.items()), 2)
+    snap.commit()
+    snap.close()
+    print(f"snapshot {out}: {len(items)} census items, {len(t2)} T2 analyses, {out.stat().st_size // 1024} KiB")
 
 
 def status(cfg: dict) -> None:
@@ -783,8 +826,10 @@ def main() -> None:
     s.add_argument("--max-items", type=int); s.add_argument("--max-tokens", type=int)
     s = sub.add_parser("ingest"); s.add_argument("--study", required=True); s.add_argument("--batch", required=True)
     s.add_argument("results"); s.add_argument("--model", default="unspecified"); s.add_argument("--effort", default="unspecified")
-    for name in ("metrics", "digest", "snapshot"):
+    for name in ("digest", "snapshot"):
         s = sub.add_parser(name); s.add_argument("--study", required=True); s.add_argument("--out", required=True)
+    s = sub.add_parser("metrics"); s.add_argument("--study"); s.add_argument("--from-snapshot")
+    s.add_argument("--out", required=True)
     s = sub.add_parser("verify-cards"); s.add_argument("--study", required=True); s.add_argument("cards", nargs="+")
     s = sub.add_parser("status"); s.add_argument("--study", required=True)
     sub.add_parser("registry")
@@ -803,6 +848,11 @@ def main() -> None:
         else:
             ap.error("sync needs REPO or --study")
         return
+    if a.cmd == "metrics" and a.from_snapshot:
+        metrics(None, Path(a.out), Path(a.from_snapshot))
+        return
+    if not a.study:
+        ap.error("--study is required")
     cfg = load_study(a.study)
     if a.cmd == "select":
         select(cfg, a.repo, a.query, a.name, a.limit)

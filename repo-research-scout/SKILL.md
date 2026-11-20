@@ -27,13 +27,14 @@ census (API only) → T0 select (no model) → T1 triage (cheap) → T2 analysis
 - One SQLite database per GitHub repository holds the census, comments, observed state changes, study selections, analyses, and batch records. Reuse across studies is automatic: a peer synced for one study is already there for the next.
 - The registry `$REPO_SCOUT_HOME/registry.json` (default `~/.local/share/repo-scout/`) indexes every database: repository → path, registration and last-sync times. `scout.py registry` prints it.
 - Default location is `$REPO_SCOUT_HOME/db/`. To keep a repository's database inside the working repository instead, set `db_dir` in the study file (relative to it) and add that directory to `.gitignore`. A repository has one database; `scout.py` refuses a second location.
-- The database is mutable. Reports cite a frozen `snapshot`, never the live database.
+- The database is mutable. Reports cite a frozen snapshot, never the live database.
+- Human-facing output is the report and the hypothesis cards. Everything else (batches, results, metrics tables, digests, snapshots) is for agents and scripts; do not ask the user to read it.
 
 ## Workflow
 
 ### 1. Set up the study
 
-1. Create a study directory in the working repository, normally inside the exploration report: `reports/<date>-<slug>/scout/`. Copy [assets/study.toml](assets/study.toml) there, and add `scout/work/` to `.gitignore` (batches and raw model outputs; their content is stored in the database and the snapshot).
+1. Create a study directory in the working repository, normally inside the exploration report: `reports/<date>-<slug>/scout/`. Copy [assets/study.toml](assets/study.toml) there, and add `scout/work/` to `.gitignore` (batches, raw model outputs, metrics tables, digests; all reproducible from the database or the snapshot).
 2. Fill `targets`, `peers`, and the window (default 24 months; set `window_start` for a fixed, reproducible window).
 3. Define `[components]` from the target's directory layout (path prefixes) and, where the repository uses area labels, `[label_components]`. Components come from the code, not from keywords.
 4. Turn each research direction into a `[[directions]]` entry with a `question` and `keywords`. Keywords decide T0 recall; include synonyms and the repository's own vocabulary (read a few titles if unsure).
@@ -81,8 +82,8 @@ T2 reads only items T1 marked `escalate` with at least one direction, at most `b
 ### 5. Metrics and digests
 
 ```bash
-python3 <skill>/scripts/scout.py metrics --study S/study.toml --out S/metrics
-python3 <skill>/scripts/scout.py digest  --study S/study.toml --out S/digests
+python3 <skill>/scripts/scout.py metrics --study S/study.toml --out S/work/metrics
+python3 <skill>/scripts/scout.py digest  --study S/study.toml --out S/work/digests
 ```
 
 `component_quarter.csv` gives, per component, quarter, and kind (issue or PR): opened, still open, closed, fraction closed within 90 days (only cohorts at least 90 days old), median and p90 days to close, distinct authors, maintainer-authored, reverts, and bug-labeled. An item's component comes from the files of its PR or linked PRs, then labels, then the model's guess. `direction_root_causes.csv` cross-tabulates the T2 analyses. Digests are one compact line per analyzed item, grouped by direction; they are T3's input.
@@ -94,10 +95,10 @@ Using the T3 tier, follow [references/synthesis.md](references/synthesis.md): co
 ### 7. Snapshot and report
 
 ```bash
-python3 <skill>/scripts/scout.py snapshot --study S/study.toml --out <report>/data/raw/<run-id>
+python3 <skill>/scripts/scout.py snapshot --study S/study.toml --out <report>/data/raw/<run-id>/snapshot.sqlite
 ```
 
-The snapshot holds the census metadata for the window, selections, all analyses with model, effort, and prompt version, the metrics, and a manifest of databases, sync history, window, and study-file hash. Write the report with `exploration-report`, citing the snapshot.
+The snapshot is one SQLite file: census metadata for the window with each item's component (no bodies), selections, all analyses with model, effort, and prompt version, sync history, the metrics tables, and a manifest (study file, window, reference time, brief versions). `metrics --from-snapshot <file> --out DIR` recomputes the metrics tables from it exactly. Commit it with the report; it is never overwritten. Write the report with `exploration-report`, presenting the numbers the user needs as tables in the report itself and citing the snapshot as their source.
 
 ## Controlling cost
 
