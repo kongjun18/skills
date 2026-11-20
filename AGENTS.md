@@ -54,6 +54,13 @@ Every agent that adds or edits a skill follows these rules.
 7. **Everything claimed exists and works.** Referenced scripts ship with the skill and run; validators fail on empty or unfilled input; linked files resolve.
 8. **Skills hold definitions only.** Run outputs, caches, corpora, personal config, and other teams' repositories live outside this repository. A skill writes its outputs to the user's working repository or a user-chosen directory, never into this one.
 9. **Preserve third-party provenance.** Keep upstream layouts intact, make only minimal compatibility fixes, and pin each upstream in `third-party/SOURCES.md`.
+10. **Per-user files follow the XDG Base Directory spec.** A file a skill keeps outside the user's project goes under `agent-skills/<skill-name>/` in the matching base directory, using the `XDG_*` variable when it is set:
+    - config the user edits, such as settings and profiles: `${XDG_CONFIG_HOME:-~/.config}/agent-skills/<skill-name>/`
+    - data the skill accumulates that the user would miss, such as corpora and history: `${XDG_DATA_HOME:-~/.local/share}/agent-skills/<skill-name>/`
+    - state such as logs, last-run markers, and resumable progress: `${XDG_STATE_HOME:-~/.local/state}/agent-skills/<skill-name>/`
+    - cache that is safe to delete and regenerate: `${XDG_CACHE_HOME:-~/.cache}/agent-skills/<skill-name>/`
+
+    A file shared by several skills lives under its owner skill's name. Never create dotfiles or dot-directories directly in `~`. A missing config falls back to bundled defaults; no skill requires one to exist. Deliverables still go to the user's project or a chosen directory (rule 8).
 
 ## Validation
 
