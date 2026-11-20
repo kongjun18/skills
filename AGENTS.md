@@ -14,6 +14,7 @@ Working discipline:
 - `good-agent`: general engineering and research work discipline.
 - `high-signal-writing`: concise, reader-first conversational responses (not artifacts).
 - `repo-memory`: repository-local knowledge and closeout protocol.
+- `user-profile`: the user's evolving personal profile at `~/.config/agent-skills/user-profile/` (context for any skill, never a filter).
 
 Git and code review:
 

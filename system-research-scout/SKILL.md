@@ -27,6 +27,8 @@ The user's scarce resource is verification time, not idea count. Ten sharp, prio
 - **Window** (default): the current calendar year and the previous one. A venue-year that has not happened or has no public proceedings goes in the coverage ledger and is excluded from cross-year comparison.
 - **Workspace**: ask the user for an output directory `DIR` outside this skills repository (for example `~/projects/research-radar/scout-<YYYY-MM>`). Every command takes `--out DIR`; the survey script refuses to write inside the skills repository.
 
+- **Reader profile** (optional): if `${XDG_CONFIG_HOME:-~/.config}/agent-skills/user-profile/profile.md` exists, read it before ranking ideas. Use it to note connections and tractability for this reader, never to narrow venue coverage or drop ideas outside it.
+
 `<skill-dir>` below is the directory containing this SKILL.md.
 
 ## Outputs
