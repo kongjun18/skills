@@ -1,12 +1,11 @@
 # Study configuration for repo-research-scout. Copy into the study directory
-# (for example reports/<date>-<slug>/scout/study.toml) and fill in.
+# (the exploration report directory) and fill in.
 
-id = "example-study"                 # unique per study; keys selections and analyses
+id = "example-study"                 # unique per study; keys selections, analyses, and scratch
 targets = ["owner/repo"]             # repositories studied in full (census + metrics)
 peers = []                           # repositories searched only per cluster (generality test)
 window_months = 24                   # census covers items updated in the window, plus all open items
 # window_start = "2025-01-01"        # overrides window_months for a fixed, reproducible window
-# db_dir = ".repo-scout"             # local database directory (gitignore it); default is the central store
 
 # Path prefixes (repository-relative) that define components. Longest prefix wins.
 # Derive them from the target's directory layout before the first run.

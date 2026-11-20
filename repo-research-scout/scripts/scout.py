@@ -8,6 +8,12 @@ model analyses keyed by (study, stage, item, input hash, prompt version), so
 nothing is re-pulled or re-analyzed unless it changed. A registry file indexes
 the databases so peer repositories are reused across studies.
 
+The central store ($REPO_SCOUT_HOME, default ~/.local/share/repo-scout) is a
+cache plus per-study scratch (work/<study id>/); it is never cited. The study
+directory in the working repository holds only the record: study.toml,
+hypotheses.md, the report, and data/evidence.sqlite, written by `snapshot`.
+Data flows one way, from the cache into the study directory.
+
 Model work happens outside this script: `export` writes batch files of cache
 misses, the host agent analyzes them with the brief for the stage, and
 `ingest` validates and stores the results.
@@ -15,14 +21,14 @@ misses, the host agent analyzes them with the brief for the stage, and
 Requires an authenticated `gh` and Python 3.11+. Standard library only.
 
 Commands:
-  sync      --study S | REPO [--window-months N] [--db-dir D]
+  sync      --study S | REPO [--window-months N]
   select    --study S [--repo R --query "kw1,kw2" --name NAME --limit N]
   export    --study S --stage t1|t2 [--max-items N] [--max-tokens N]
   ingest    --study S --batch B.json RESULTS.jsonl [--model M] [--effort E]
-  metrics   --study S --out DIR | --from-snapshot SNAP.sqlite --out DIR
-  digest    --study S --out DIR
-  verify-cards --study S CARD.md...
-  snapshot  --study S --out SNAP.sqlite
+  metrics   --study S [--out DIR] | --from-snapshot EVIDENCE.sqlite --out DIR
+  digest    --study S [--out DIR]
+  verify    --study S                  checks <study dir>/hypotheses.md
+  snapshot  --study S [--out FILE]     default <study dir>/data/evidence.sqlite
   status    --study S
   registry
 """
@@ -164,26 +170,23 @@ def save_registry(reg: dict) -> None:
     REGISTRY.write_text(json.dumps(reg, indent=2, sort_keys=True) + "\n")
 
 
-def db_path(repo: str, db_dir: str | None = None, create: bool = False) -> Path:
-    reg = load_registry()
-    entry = reg.get(repo)
-    wanted = (Path(db_dir).expanduser().resolve() if db_dir else HOME / "db") / (repo.replace("/", "__") + ".sqlite")
-    if entry and Path(entry["db"]).exists():
-        if db_dir and Path(entry["db"]) != wanted:
-            raise SystemExit(f"{repo} is already registered at {entry['db']}; use that or remove its registry entry in {REGISTRY}")
-        return Path(entry["db"])
+def db_path(repo: str, create: bool = False) -> Path:
+    path = HOME / "db" / (repo.replace("/", "__") + ".sqlite")
+    if path.exists():
+        return path
     if not create:
         raise SystemExit(f"{repo} has no database; run: scout.py sync {repo}")
-    if wanted.resolve().is_relative_to(SKILLS_REPO.resolve()):
+    if path.resolve().is_relative_to(SKILLS_REPO.resolve()):
         raise SystemExit("refusing to write a database inside the skills repository")
-    wanted.parent.mkdir(parents=True, exist_ok=True)
-    reg[repo] = {"db": str(wanted), "registered_at": now()}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    reg = load_registry()
+    reg[repo] = {"db": str(path), "registered_at": now()}
     save_registry(reg)
-    return wanted
+    return path
 
 
-def connect(repo: str, db_dir: str | None = None, create: bool = False) -> sqlite3.Connection:
-    con = sqlite3.connect(db_path(repo, db_dir, create))
+def connect(repo: str, create: bool = False) -> sqlite3.Connection:
+    con = sqlite3.connect(db_path(repo, create))
     con.row_factory = sqlite3.Row
     con.executescript(SCHEMA)
     return con
@@ -220,10 +223,8 @@ def load_study(path: str) -> dict:
     cfg["window_start"] = cfg.get("window_start") or months_ago(int(cfg.get("window_months", 24)))
     if len(cfg["window_start"]) == 10:
         cfg["window_start"] += "T00:00:00Z"
-    if cfg.get("db_dir"):
-        cfg["db_dir"] = str((p.parent / Path(cfg["db_dir"]).expanduser()).resolve())
     cfg["_path"], cfg["_dir"], cfg["_hash"] = p, p.parent, sha(raw.decode())
-    cfg["_work"] = p.parent / "work"
+    cfg["_work"] = HOME / "work" / cfg["id"]
     return cfg
 
 
@@ -314,8 +315,8 @@ def sync_pass(con, repo, kind, window_start, open_only, ghv) -> int:
     return fetched
 
 
-def sync_repo(repo: str, window_start: str, db_dir: str | None) -> None:
-    con = connect(repo, db_dir, create=True)
+def sync_repo(repo: str, window_start: str) -> None:
+    con = connect(repo, create=True)
     ghv = gh_version()
     for kind in ("issue", "pr"):
         sync_pass(con, repo, kind, window_start, False, ghv)
@@ -690,10 +691,10 @@ def digest(cfg: dict, out: Path) -> None:
         print(out / f"digest-{d}.md")
 
 
-# ---------- cards, snapshot, status ----------
+# ---------- hypotheses, snapshot, status ----------
 
-CARD_SECTIONS = ["## Research question", "## Mismatch", "## Evidence", "## Generality",
-                 "## Prior art", "## Falsification", "## Cheapest experiment", "## Verdict"]
+CARD_SECTIONS = ["Research question", "Mismatch", "Evidence", "Generality",
+                 "Prior art", "Falsification", "Cheapest experiment", "Verdict"]
 EVIDENCE_RE = re.compile(r'^- (https://github\.com/\S+) — "(.+)"\s*$')
 
 
@@ -708,20 +709,25 @@ def find_item(url: str):
     return con, con.execute("SELECT * FROM items WHERE key=?", (f"{m.group(1)}#{m.group(2)}",)).fetchone()
 
 
-def verify_cards(paths: list[str]) -> None:
+def verify_hypotheses(path: Path) -> None:
+    """Each `## ` heading is one card; it needs every `### ` section and verbatim evidence lines."""
+    text = path.read_text()
+    cards = re.split(r"^## ", text, flags=re.M)[1:]
+    if not cards:
+        raise SystemExit(f"FAIL {path}: no cards (each card starts with a '## ' heading)")
     failures = 0
-    for p in paths:
-        text = Path(p).read_text()
-        errs = [f"missing section {s}" for s in CARD_SECTIONS if s not in text]
-        n = 0
-        for line in text.splitlines():
+    for card in cards:
+        title, errs, n = card.splitlines()[0], [], 0
+        heads = set(re.findall(r"^### (.+?)\s*$", card, flags=re.M))
+        errs += [f"missing section ### {s}" for s in CARD_SECTIONS if s not in heads]
+        for line in card.splitlines():
             m = EVIDENCE_RE.match(line)
             if not m:
                 continue
             n += 1
             con, item = find_item(m.group(1))
             if not item:
-                errs.append(f"item not in any registered database: {m.group(1)}")
+                errs.append(f"item not in any database: {m.group(1)}")
                 continue
             hay = norm(item["title"] + " " + item["body"] + " " + " ".join(
                 c[0] for c in con.execute("SELECT body FROM comments WHERE item_key=?", (item["key"],))))
@@ -729,9 +735,9 @@ def verify_cards(paths: list[str]) -> None:
                 errs.append(f"quote not verbatim in {m.group(1)}: {m.group(2)[:80]!r}")
         if n == 0:
             errs.append('no evidence lines of the form: - <github url> — "verbatim quote"')
-        if "TODO" in text:
+        if "TODO" in card:
             errs.append("unfilled placeholder")
-        print(f"{'OK  ' if not errs else 'FAIL'} {p} ({n} evidence lines)")
+        print(f"{'OK  ' if not errs else 'FAIL'} {title[:70]} ({n} evidence lines)")
         for e in errs:
             print(f"     {e}")
         failures += bool(errs)
@@ -745,12 +751,12 @@ SNAP_ITEM_COLS = ["key", "repo", "number", "kind", "title", "url", "state", "sta
 
 def snapshot(cfg: dict, out: Path) -> None:
     """Freeze the study's evidence into one SQLite file that `metrics --from-snapshot` reproduces from."""
-    if out.exists():
-        raise SystemExit(f"{out} exists; snapshots are never overwritten, use a new run id")
     out.parent.mkdir(parents=True, exist_ok=True)
+    tmp = out.with_suffix(".tmp")
+    tmp.unlink(missing_ok=True)
     ref = now()
     items, t2 = gather_live(cfg)
-    snap = sqlite3.connect(out)
+    snap = sqlite3.connect(tmp)
     snap.executescript(f"""
         CREATE TABLE manifest(k TEXT PRIMARY KEY, v TEXT);
         CREATE TABLE items({", ".join(SNAP_ITEM_COLS)}, PRIMARY KEY(key));
@@ -788,6 +794,7 @@ def snapshot(cfg: dict, out: Path) -> None:
     put("manifest", list(manifest.items()), 2)
     snap.commit()
     snap.close()
+    os.replace(tmp, out)
     print(f"snapshot {out}: {len(items)} census items, {len(t2)} T2 analyses, {out.stat().st_size // 1024} KiB")
 
 
@@ -818,7 +825,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("sync"); s.add_argument("repo", nargs="?"); s.add_argument("--study")
-    s.add_argument("--window-months", type=int, default=24); s.add_argument("--db-dir")
+    s.add_argument("--window-months", type=int, default=24)
     s = sub.add_parser("select"); s.add_argument("--study", required=True); s.add_argument("--repo")
     s.add_argument("--query"); s.add_argument("--name"); s.add_argument("--limit", type=int)
     s = sub.add_parser("export"); s.add_argument("--study", required=True)
@@ -826,11 +833,11 @@ def main() -> None:
     s.add_argument("--max-items", type=int); s.add_argument("--max-tokens", type=int)
     s = sub.add_parser("ingest"); s.add_argument("--study", required=True); s.add_argument("--batch", required=True)
     s.add_argument("results"); s.add_argument("--model", default="unspecified"); s.add_argument("--effort", default="unspecified")
-    for name in ("digest", "snapshot"):
-        s = sub.add_parser(name); s.add_argument("--study", required=True); s.add_argument("--out", required=True)
+    s = sub.add_parser("digest"); s.add_argument("--study", required=True); s.add_argument("--out")
+    s = sub.add_parser("snapshot"); s.add_argument("--study", required=True); s.add_argument("--out")
     s = sub.add_parser("metrics"); s.add_argument("--study"); s.add_argument("--from-snapshot")
-    s.add_argument("--out", required=True)
-    s = sub.add_parser("verify-cards"); s.add_argument("--study", required=True); s.add_argument("cards", nargs="+")
+    s.add_argument("--out")
+    s = sub.add_parser("verify"); s.add_argument("--study", required=True)
     s = sub.add_parser("status"); s.add_argument("--study", required=True)
     sub.add_parser("registry")
     a = ap.parse_args()
@@ -842,13 +849,15 @@ def main() -> None:
         if a.study:
             cfg = load_study(a.study)
             for repo in cfg["targets"]:
-                sync_repo(repo, cfg["window_start"], cfg.get("db_dir") or a.db_dir)
+                sync_repo(repo, cfg["window_start"])
         elif a.repo:
-            sync_repo(a.repo, months_ago(a.window_months), a.db_dir)
+            sync_repo(a.repo, months_ago(a.window_months))
         else:
             ap.error("sync needs REPO or --study")
         return
     if a.cmd == "metrics" and a.from_snapshot:
+        if not a.out:
+            ap.error("--from-snapshot needs --out")
         metrics(None, Path(a.out), Path(a.from_snapshot))
         return
     if not a.study:
@@ -861,13 +870,13 @@ def main() -> None:
     elif a.cmd == "ingest":
         ingest(cfg, a.batch, a.results, a.model, a.effort)
     elif a.cmd == "metrics":
-        metrics(cfg, Path(a.out))
+        metrics(cfg, Path(a.out) if a.out else cfg["_work"] / "metrics")
     elif a.cmd == "digest":
-        digest(cfg, Path(a.out))
+        digest(cfg, Path(a.out) if a.out else cfg["_work"] / "digests")
     elif a.cmd == "snapshot":
-        snapshot(cfg, Path(a.out))
-    elif a.cmd == "verify-cards":
-        verify_cards(a.cards)
+        snapshot(cfg, Path(a.out) if a.out else cfg["_dir"] / "data" / "evidence.sqlite")
+    elif a.cmd == "verify":
+        verify_hypotheses(cfg["_dir"] / "hypotheses.md")
     elif a.cmd == "status":
         status(cfg)
 

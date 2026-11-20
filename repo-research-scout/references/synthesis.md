@@ -44,40 +44,40 @@ For each cluster that survives as `system-class` or `general`, search for the cl
 
 ## 5. Hypothesis cards
 
-Write one card per surviving cluster to `cards/<slug>.md` in the study directory, using exactly these sections:
+Write all cards to `hypotheses.md` in the study directory, one `## ` heading per surviving cluster, each with exactly these `### ` sections:
 
 ```markdown
-# <one-line claim>
+## <one-line claim>
 
-## Research question
+### Research question
 <question a paper could answer>
 
-## Mismatch
+### Mismatch
 <what the system assumes versus what the workload does, in two or three sentences>
 
-## Evidence
+### Evidence
 - https://github.com/<owner>/<repo>/issues/<n> — "<verbatim quote>"
 - (two or more lines; each quote verbatim from that item's body or comments)
 
-## Generality
+### Generality
 <verdict from step 3, peers searched, what they showed>
 
-## Prior art
+### Prior art
 <closest works, or "prior art unchecked">
 
-## Falsification
+### Falsification
 <observations that would show this is not a real or general problem>
 
-## Cheapest experiment
+### Cheapest experiment
 <minimal reproduction or measurement, its inputs, and its expected cost; not run unless the user asks>
 
-## Verdict
+### Verdict
 <promising | needs evidence | implementation-only | drop>, with confidence and the one fact that would change it
 ```
 ```
 
-Then run `scout.py verify-cards --study S cards/*.md` and fix every failure. It checks the sections, that each evidence quote is verbatim in an item stored in a registered database, and that no placeholder remains.
+Then run `scout.py verify --study S/study.toml` and fix every failure. It checks each card's sections, that each evidence quote is verbatim in an item stored in a registered database, and that no placeholder remains.
 
 ## 6. Hand to the report
 
-Write the exploration report with the `exploration-report` skill. Map each study direction to a scorecard row and each card to a finding or open question. Cite the snapshot (`scout.py snapshot`) as raw data, and put every number the reader needs into the report as a table rather than pointing at the snapshot; tag issue-derived claims `[cited: <url>]` and census counts `[measured]` with the snapshot path. Issue reports are third-party evidence, not reproduction.
+Write the exploration report with the `exploration-report` skill. Map each study direction to a scorecard row and each card to a finding or open question. Cite the snapshot (`scout.py snapshot`) as raw data, and put every number the reader needs into the report as a table rather than pointing at the snapshot; tag issue-derived claims `[cited: <url>]` and census counts `[measured]` citing `data/evidence.sqlite`. Issue reports are third-party evidence, not reproduction.

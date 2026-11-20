@@ -114,6 +114,10 @@ _docs/explorations/<YYYY-MM-DD>-<slug>/
 
 The date is the exploration's start date and does not change as the report is updated.
 
+When the repository is a codebase under study rather than the user's own project (for example a clone of a system being investigated), use `_research/<YYYY-MM-DD>-<slug>/` instead, so humans and agents can tell the reports are an overlay and not part of the project. Create `_research/README.md` once, with one line saying the directory holds external research artifacts that are not part of the project.
+
+Raw data produced by another skill keeps that skill's layout (for example, `repo-research-scout` writes one `data/evidence.sqlite`).
+
 Commit data with the report. When a file is too large for the repository's conventions, keep it outside git and record in the Data Index its location, size, checksum, and the command that regenerates it.
 
 ## Report Structure
