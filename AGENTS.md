@@ -53,7 +53,7 @@ Every agent that adds or edits a skill follows these rules.
 5. **Generalize episode fixes.** When a failure motivates a new rule, write the general rule once in its home section, with at most one short example. Do not append the same patch to several files.
 6. **Few modes, one vocabulary.** Keep modes and stages few, give them one naming scheme, and use one schema per artifact.
 7. **Everything claimed exists and works.** Referenced scripts ship with the skill and run; validators fail on empty or unfilled input; linked files resolve.
-8. **Skills hold definitions only.** Run outputs, caches, corpora, personal config, and other teams' repositories live outside this repository. A skill writes its outputs to the user's working repository or a user-chosen directory, never into this one.
+8. **Skills hold definitions only.** Run outputs, caches, corpora, personal config, and other teams' repositories live outside this repository. A skill writes its outputs to the user's working repository or a user-chosen directory, never into this one. Inside a project, generated documents follow the [`_docs/` layout](repo-memory/references/docs-layout.md).
 9. **Preserve third-party provenance.** Keep upstream layouts intact, make only minimal compatibility fixes, and pin each upstream in `third-party/SOURCES.md`.
 10. **Per-user files follow the XDG Base Directory spec.** A file a skill keeps outside the user's project goes under `agent-skills/<skill-name>/` in the matching base directory, using the `XDG_*` variable when it is set:
     - config the user edits, such as settings and profiles: `${XDG_CONFIG_HOME:-~/.config}/agent-skills/<skill-name>/`
@@ -73,5 +73,5 @@ Every agent that adds or edits a skill follows these rules.
 ## Repository Memory
 
 - Keep this file as the short root index.
-- Create an epic under `docs/epics/` only for work that will span multiple tasks or sessions.
-- Route temporary investigation output outside the repository or to ignored scratch space.
+- Create an epic under `_docs/epics/` only for work that will span multiple tasks or sessions.
+- Route temporary investigation output outside the repository or to `_docs/scratch/`.

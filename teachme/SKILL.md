@@ -1,6 +1,6 @@
 ---
 name: teachme
-description: Teach the user an unfamiliar repository, concept, or research direction by writing a self-contained HTML tutorial into the project's `tutorials/` directory, calibrated to the user's background, built around one running example, with diagrams, check-yourself questions, code walkthroughs with file:line citations, a glossary, and verified further reading. Invoked as /teachme. Triggers include "teach me", "write a tutorial", "help me understand this repo / codebase / concept / paper area / research direction", "onboarding guide", "explain X in depth", "I don't understand X", "make me a tutorial in HTML". For a short answer in chat, answer directly (high-signal-writing); for a survey of recent conference papers into research ideas, use system-research-scout; for a weekly arXiv digest, use pull-recent-papers; for measuring or benchmarking something and reporting results, use exploration-report.
+description: Teach the user an unfamiliar repository, concept, or research direction by writing a self-contained HTML tutorial into the project's `_docs/tutorials/` directory, calibrated to the user's background, built around one running example, with diagrams, check-yourself questions, code walkthroughs with file:line citations, a glossary, and verified further reading. Invoked as /teachme. Triggers include "teach me", "write a tutorial", "help me understand this repo / codebase / concept / paper area / research direction", "onboarding guide", "explain X in depth", "I don't understand X", "make me a tutorial in HTML". For a short answer in chat, answer directly (high-signal-writing); for a survey of recent conference papers into research ideas, use system-research-scout; for a weekly arXiv digest, use pull-recent-papers; for measuring or benchmarking something and reporting results, use exploration-report.
 ---
 
 # Teach Me
@@ -17,7 +17,7 @@ learner + goal → sources → mental model + outline → write HTML → check s
 2. **Start from the learner, not the subject.** The learner's background and goal decide what to skip, what to explain, and the order. A tutorial that is correct but starts in the wrong place has failed.
 3. **One mental model, one running example.** The big-picture section states the whole model in a paragraph and a diagram; every lesson zooms into one part of it, using the same concrete example throughout.
 4. **Understanding is tested, not asserted.** Each lesson ends with a check-yourself question that needs the idea applied, with a reasoned answer.
-5. **Write to the project, commit nothing.** The tutorial goes to `<project-root>/tutorials/<slug>.html` (step 4) and is not committed unless the user asks.
+5. **Write to the project, commit nothing.** The tutorial goes to `<project-root>/_docs/tutorials/<slug>.html` (step 4; the shared [`_docs/` layout](../repo-memory/references/docs-layout.md)) and is not committed unless the user asks.
 
 ## Workflow
 
@@ -50,7 +50,7 @@ How to teach each lesson (concrete before abstract, diagrams, misconceptions, qu
 
 ### 4. Write the HTML
 
-Copy [assets/tutorial-template.html](assets/tutorial-template.html) to `<project-root>/tutorials/<slug>.html`. `<project-root>` is the Git root of the directory the user is working in, else that directory; it may differ from the repository being studied. If the project's own rules forbid generated output inside it, ask the user for a directory instead. Fill every `{{...}}` and `TODO`, and delete what does not apply, including the template's comments.
+Copy [assets/tutorial-template.html](assets/tutorial-template.html) to `<project-root>/_docs/tutorials/<slug>.html`. `<project-root>` is the Git root of the directory the user is working in, else that directory; it may differ from the repository being studied. If the project's own rules forbid generated output inside it, ask the user for a directory instead. Fill every `{{...}}` and `TODO`, and delete what does not apply, including the template's comments.
 
 For repo tutorials, produce every code excerpt and citation with `scripts/excerpt.py` (usage in [html-format.md](references/html-format.md#code)) so the excerpt is copied from the pinned commit, escaped, and linked; never retype code. Components, citation format, diagrams, math, and code-block conventions: [html-format.md](references/html-format.md). Read it before writing.
 
@@ -59,7 +59,7 @@ Required sections: objectives, prerequisites, big picture, the lessons, the walk
 ### 5. Check
 
 ```bash
-python3 <skill>/scripts/check_tutorial.py tutorials/<slug>.html --check-urls [--repo <repo-root>]
+python3 <skill>/scripts/check_tutorial.py _docs/tutorials/<slug>.html --check-urls [--repo <repo-root>]
 ```
 
 `--repo` is required for repo tutorials; it verifies every code citation's file and line range at the pinned commit. `--check-urls` fetches every web link; drop it only when offline, and say so in the handover. Fix every error. The script checks structure only; it cannot tell whether the teaching is right.
@@ -71,7 +71,7 @@ Then render the page (a headless browser screenshot when one is available, other
 Dispatch two fresh subagents with the briefs in [agents/reviewers.md](agents/reviewers.md), in parallel:
 
 - **Fact checker**: verifies each claim against its cited source and flags uncited claims.
-- **Learner**: reads cold as the target learner and reports where they got lost, which term arrived undefined, and which check-yourself question they could not answer from the text. Give it a copy without answers, made with `scripts/strip_answers.py tutorials/<slug>.html <scratch>/<slug>-noanswers.html`, outside the project.
+- **Learner**: reads cold as the target learner and reports where they got lost, which term arrived undefined, and which check-yourself question they could not answer from the text. Give it a copy without answers, made with `scripts/strip_answers.py _docs/tutorials/<slug>.html <scratch>/<slug>-noanswers.html`, outside the project.
 
 Fix what they find, re-run the check script, and repeat the review only if the fixes were substantial. Skip the review only when the user explicitly asked to skip it or to go fast; a request for a short tutorial is not that. Say so in the handover.
 

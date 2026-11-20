@@ -4,9 +4,9 @@
 Usage:
     lint_knowledge.py [PATH ...]
 
-PATH defaults to docs/. Scans numbered notes (NNN-<topic>.md, exactly
-three digits) wherever they sit: epic `knowledge/` directories, the legacy
-epic `notes/` layout, `docs/knowledge/`, and stray piles elsewhere. Files
+PATH defaults to _docs/ (docs/ in a repository that still uses it). Scans
+numbered notes (NNN-<topic>.md, exactly three digits) wherever they sit: epic `knowledge/` directories, the legacy
+epic `notes/` layout, `_docs/knowledge/`, and stray piles elsewhere. Files
 under `archive/` count only for ID reuse. ADR folders (adr/, adrs/,
 decisions/) are skipped, since superseded-by links are their convention.
 Relative links are checked in every non-archived Markdown file scanned.
@@ -211,7 +211,8 @@ def main(argv: list[str]) -> int:
     if any(a.startswith("-") for a in args):
         print(__doc__, file=sys.stderr)
         return 2
-    return lint([Path(a) for a in args] or [Path("docs")])
+    default = Path("_docs") if Path("_docs").exists() or not Path("docs").exists() else Path("docs")
+    return lint([Path(a) for a in args] or [default])
 
 
 if __name__ == "__main__":

@@ -13,7 +13,7 @@ Usage:
 
   PR                  PR number or URL; default: the PR of the current branch
   --repo OWNER/NAME   repository; default: from the URL, else the current repo
-  --out FILE          Markdown output (default: <repo root>/temp/PR_REVIEW_COMMENTS.md)
+  --out FILE          Markdown output (default: <repo root>/_docs/scratch/pr-reviews/PR_REVIEW_COMMENTS.md)
   --json FILE         also save the raw fetched data as JSON
   --from-json FILE    format a previously saved JSON instead of fetching
   --include-resolved  keep GitHub-resolved threads, marked as resolved
@@ -276,7 +276,7 @@ def default_out() -> Path:
         root = Path(run(["git", "rev-parse", "--show-toplevel"]).strip())
     except (FetchError, FileNotFoundError):
         root = Path.cwd()
-    return root / "temp" / "PR_REVIEW_COMMENTS.md"
+    return root / "_docs" / "scratch" / "pr-reviews" / "PR_REVIEW_COMMENTS.md"
 
 
 def main(argv: list[str]) -> int:

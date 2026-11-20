@@ -62,7 +62,7 @@ Start from [assets/report-template.md](assets/report-template.md). Write the Ana
 Run the linter, [scripts/lint_report.py](scripts/lint_report.py):
 
 ```
-python3 <skill-dir>/scripts/lint_report.py reports/<date>-<slug>/report.md
+python3 <skill-dir>/scripts/lint_report.py _docs/explorations/<date>-<slug>/report.md
 ```
 
 It checks the required sections, the status line, scorecard statuses, the TL;DR length, and relative links, and it fails on any template placeholder left in the report (`TODO`, `YYYY-MM-DD`); record unfinished items in the Scorecard as `not run` or `blocked` instead. It also traces every TL;DR quantity into the body with its unit (`42 GB/s` must reappear as `42 GB/s`, not `42 MB/s`) and checks each TL;DR bullet for an evidence tag and a confidence; these TL;DR checks warn while the report is `active` and fail once it is `concluded`. It cannot judge whether the evidence supports a claim. For that, spawn a reviewer subagent with a fresh context and ask it to:
@@ -100,10 +100,10 @@ In chat, answer each question and list what you recorded and where.
 
 ## Report Directory
 
-Keep reports in the repository where the exploration runs. Use the repository's existing reports location if it has one; otherwise use:
+Keep reports in the repository where the exploration runs, in `_docs/explorations/` (the shared [`_docs/` layout](../repo-memory/references/docs-layout.md)). Use the repository's existing reports location if its `AGENTS.md` names one. Each report is a directory:
 
 ```
-reports/<YYYY-MM-DD>-<slug>/
+_docs/explorations/<YYYY-MM-DD>-<slug>/
 ├── report.md
 ├── scripts/          experiment and analysis scripts the report cites
 ├── data/

@@ -23,7 +23,7 @@ Rebasing and restacking rewrite history and can move several branches at once. A
    - the Graphite parent of each branch, so parents can be re-pointed on restore;
    - the upstream or tracking ref, and one line on the operation you are about to run and why.
 
-3. **Save it** as `RESTACK-RESTORE-<YYYYMMDD>.md` at the repository root. It is recovery scratch: do not commit it unless the user asks.
+3. **Save it** as `_docs/scratch/restack/RESTACK-RESTORE-<YYYYMMDD>.md` in the checkout you operate in ([`_docs/` layout](../../repo-memory/references/docs-layout.md)). It is recovery scratch and never committed.
 
 4. **Never overwrite an existing restore doc.** Read it and understand the state it records. If branches have moved since, mark that section **OUTDATED** (keep its content) and append a new dated section with the current state and its own backup prefix. The doc is append-only history.
 

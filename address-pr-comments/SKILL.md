@@ -1,6 +1,6 @@
 ---
 name: address-pr-comments
-description: "Fetch all review comments on a GitHub PR with the bundled script, investigate each thread against the current code, and write the classification (address / investigate / fixed / skip / deferred), proposed fix, risk, and open questions to temp/PR_{number}_REVIEW.md, which then serves as the living progress tracker and final report. No code changes until the user asks. Triggers: address PR comments, respond to PR review, handle review feedback, work through PR comments, triage review threads. For a single question about one comment, just read it; for rebasing or restacking the PR branch, use git."
+description: "Fetch all review comments on a GitHub PR with the bundled script, investigate each thread against the current code, and write the classification (address / investigate / fixed / skip / deferred), proposed fix, risk, and open questions to _docs/scratch/pr-reviews/PR_{number}_REVIEW.md, which then serves as the living progress tracker and final report. No code changes until the user asks. Triggers: address PR comments, respond to PR review, handle review feedback, work through PR comments, triage review threads. For a single question about one comment, just read it; for rebasing or restacking the PR branch, use git."
 ---
 
 # Address PR Comments
@@ -10,7 +10,7 @@ Triage and work through PR review feedback in five steps:
 1. **Fetch** every review comment and PR-level comment from GitHub.
 2. **Classify** — give each thread an ID and a provisional status.
 3. **Investigate** — read the code behind each thread: is the concern real, is it already fixed, what is the fix, what does the fix risk.
-4. **Write** `temp/PR_<pr-id>_REVIEW.md` — the classification and the analysis.
+4. **Write** `_docs/scratch/pr-reviews/PR_<pr-id>_REVIEW.md` — the classification and the analysis.
 5. **Iterate** with the user, who drives from the doc.
 
 Do not invoke this skill for a one-off "what does this comment mean?" question — just read that comment directly.
@@ -24,7 +24,7 @@ These hold at every step; the steps below do not restate them.
 3. **Uncertainty is a status, not a guess.** Unclear fix, risk, background, goal, purpose, or reviewer intent → `investigate`, even if that leaves most of the table there. Never guess to move a row out of it.
 4. **Nothing is dropped or truncated.** Every thread is a row, including already-fixed and declined ones. Every `skip` carries a one-line reason.
 5. **The doc is the index of record** — deliverable, progress tracker, and final report. A doc whose rows are all `fixed` *is* the report; never write a parallel summary, report, or fix-list file. It may *link out* to a companion doc in the rare case that one thread's analysis is both complex and long (Step 4), but status, ownership of the conclusion, and the row for every thread stay here. It must never lag the conversation: any change to a row's state lands in the file in the same turn it happens, before you report to the user.
-6. **Fresh inputs only.** `temp/PR_REVIEW_COMMENTS.md` and `temp/PR_<pr-id>_REVIEW.md` are outputs, never inputs across sessions. Never classify from a prior run's comments, never carry rows forward from a prior run's doc.
+6. **Fresh inputs only.** `_docs/scratch/pr-reviews/PR_REVIEW_COMMENTS.md` and `_docs/scratch/pr-reviews/PR_<pr-id>_REVIEW.md` are outputs, never inputs across sessions. Never classify from a prior run's comments, never carry rows forward from a prior run's doc.
 7. **IDs are stable.** Thread and question IDs never change for the life of a doc, including as rows change status.
 
 ## Step 1: Fetch the comments
@@ -35,7 +35,7 @@ Every invocation starts with a fresh fetch. Run the bundled script from the root
 python3 <skill-dir>/scripts/fetch_pr_comments.py [<pr-number-or-url>] [--repo OWNER/NAME]
 ```
 
-It needs an authenticated `gh` and makes read-only GraphQL calls. Without arguments it uses the PR of the current branch and the repository of the current directory. It paginates every connection and writes `temp/PR_REVIEW_COMMENTS.md`, overwriting any previous result:
+It needs an authenticated `gh` and makes read-only GraphQL calls. Without arguments it uses the PR of the current branch and the repository of the current directory. It paginates every connection and writes `_docs/scratch/pr-reviews/PR_REVIEW_COMMENTS.md`, overwriting any previous result:
 
 - a header with PR number, title, URL, state, head and base branch, head commit, fetch timestamp, and counts, including how many GitHub-resolved threads were hidden;
 - PR-level comments and non-empty review summaries, in chronological order;
@@ -91,7 +91,7 @@ For each thread:
 
 ## Step 4: Write the review doc
 
-Write to `temp/PR_<pr-id>_REVIEW.md`, `<pr-id>` being the PR number (e.g. `temp/PR_12345_REVIEW.md`). If the file exists from an earlier session, overwrite it without reading it (invariant 6) — its statuses describe an older revision and older comments. The same goes for any `temp/PR_<pr-id>_*` companion docs left behind: they belong to the previous run's thread IDs, so do not link to one until this run's investigation has rewritten it. Tell the user you overwrote the doc, and ask them to restate any prior-session decisions that still apply, since IDs are re-derived and may have shifted.
+Write to `_docs/scratch/pr-reviews/PR_<pr-id>_REVIEW.md` (never committed; the shared [`_docs/` layout](../repo-memory/references/docs-layout.md)), `<pr-id>` being the PR number (e.g. `_docs/scratch/pr-reviews/PR_12345_REVIEW.md`). If the file exists from an earlier session, overwrite it without reading it (invariant 6) — its statuses describe an older revision and older comments. The same goes for any `_docs/scratch/pr-reviews/PR_<pr-id>_*` companion docs left behind: they belong to the previous run's thread IDs, so do not link to one until this run's investigation has rewritten it. Tell the user you overwrote the doc, and ask them to restate any prior-session decisions that still apply, since IDs are re-derived and may have shifted.
 
 **Header** — the provenance of the review:
 
@@ -101,7 +101,7 @@ Write to `temp/PR_<pr-id>_REVIEW.md`, `<pr-id>` being the PR number (e.g. `temp/
 - **PR:** <pr-url>
 - **Branch:** `<head-ref>` → `<base-ref>`
 - **Reviewed:** <YYYY-MM-DD>
-- **Comments fetched:** <fetch timestamp from temp/PR_REVIEW_COMMENTS.md>
+- **Comments fetched:** <fetch timestamp from _docs/scratch/pr-reviews/PR_REVIEW_COMMENTS.md>
 - **Head commit:** `<short-sha>` (`git rev-parse --short HEAD`)
 - **Status:** N address · N investigate · N fixed · N skip · N deferred
 ```
@@ -163,7 +163,7 @@ tradeoffs: [PR_12345_07_lock_ordering.md](PR_12345_07_lock_ordering.md).
 
 - **Inline is the default; a companion doc is the exception.** Most threads — including most `deferred` ones — need a few sentences of Analysis and Risk and nothing more. Splitting a thread that did not need it scatters the review across files for no gain, and costs the reader a hop to learn something that fit in a paragraph.
 - **Trigger — both conditions, not either.** Split only when the analysis (a) is *complex*: it needs multi-file call traces, a repro, measurements, or a table of alternatives with their tradeoffs; **and** (b) is *long*: written out honestly it runs past roughly 30 lines and would dominate the review doc. One condition alone is not enough — a complex finding that fits in a paragraph stays inline, and a long-but-simple enumeration gets tightened rather than exported. When in doubt, inline it.
-- **Naming** — `temp/PR_<pr-id>_<thread-id-zero-padded>_<slug>.md`, e.g. `temp/PR_12345_07_lock_ordering.md`. One doc per thread, so the filename says which row it belongs to.
+- **Naming** — `_docs/scratch/pr-reviews/PR_<pr-id>_<thread-id-zero-padded>_<slug>.md`, e.g. `_docs/scratch/pr-reviews/PR_12345_07_lock_ordering.md`. One doc per thread, so the filename says which row it belongs to.
 - **Split of content** — the companion doc holds the trace, the excerpts, the measurements, and the rejected alternatives with reasons. The review doc holds the conclusion: what is true, what you propose, and what it risks, in a few sentences a reader can act on without opening the link.
 - **The conclusion must stand alone.** "See the deep dive" is not a conclusion. A reader who never opens the link must still learn the finding and the recommendation.
 - **Status and questions never move out.** The row, its status, its transitions, and its `Q<id>` questions live in the review doc only — the companion doc is evidence, not a second tracker (invariant 5). It needs no status field and is not updated as the row progresses; if the conclusion changes, the review doc's Analysis changes and the companion doc gains a dated correction.
@@ -173,7 +173,7 @@ Keep the table scannable and put the depth in the sections — or, in the rare c
 
 ## Step 5: Iterate with the user
 
-Point the user at `temp/PR_<pr-id>_REVIEW.md` with a one-paragraph orientation: counts per status, and the open questions (by ID) blocking the most rows. Then let them drive.
+Point the user at `_docs/scratch/pr-reviews/PR_<pr-id>_REVIEW.md` with a one-paragraph orientation: counts per status, and the open questions (by ID) blocking the most rows. Then let them drive.
 
 From here it is a conversation that may run many turns: they answer questions, dispute an analysis, ask you to dig deeper on one thread, restatus rows, request fixes a few at a time, or come back after pushing new commits. Handle each request at the scope asked.
 

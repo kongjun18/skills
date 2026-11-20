@@ -34,36 +34,36 @@ Every task inside a repository. The mandatory part is small: the [Begin](#begin)
 
 ## Where Things Go
 
-Use the repository's established layout when it has one, including an existing epic `notes/` directory, ADR folder, or specs location; do not migrate it. Otherwise use:
+Use the repository's established layout when it has one, including an existing epic `notes/` directory, ADR folder, or specs location; do not migrate it. Otherwise use the following, which is repo-memory's part of the shared [`_docs/` layout](references/docs-layout.md):
 
 ```
 AGENTS.md                         root index: commands, links, memory rules
 CLAUDE.md                         @AGENTS.md, plus Claude-only additions
-docs/specs/                       accepted specifications, labeled drafts
-docs/knowledge/                   repo-level knowledge useful across epics
-docs/epics/index.md               list of epics
-docs/epics/<slug>/index.md        stable entry point
-docs/epics/<slug>/status.md       current state
-docs/epics/<slug>/progress.md     milestones
-docs/epics/<slug>/knowledge/NNN-<topic>.md   one durable topic per note
-docs/epics/<slug>/archive/        inactive material
+_docs/specs/                      accepted specifications
+_docs/knowledge/                  repo-level knowledge useful across epics
+_docs/epics/index.md              list of epics
+_docs/epics/<slug>/index.md       stable entry point
+_docs/epics/<slug>/status.md      current state
+_docs/epics/<slug>/progress.md    milestones
+_docs/epics/<slug>/knowledge/NNN-<topic>.md   one durable topic per note
+_docs/epics/<slug>/archive/       inactive material
 ```
 
 Create only what the work needs. An epic is for work that spans multiple tasks, sessions, or parallel workers; a one-turn task usually writes no memory at all.
 
 | Content | Destination |
 |---|---|
-| Raw reasoning, temporary plans, command output, debugging residue | Chat, terminal, `/tmp`, or ignored scratch space |
+| Raw reasoning, temporary plans, command output, debugging residue | Chat, terminal, `/tmp`, or `_docs/scratch/` |
 | Current epic state, focus, blockers, next steps | `status.md`, replacing stale state |
 | Meaningful milestone or direction change | `progress.md` |
 | Durable finding, constraint, hypothesis, decision, conflict, open question | The existing note on that topic; a new note only when no note covers the topic |
 | Accepted requirement | The specification |
-| Knowledge useful beyond one epic | `docs/knowledge/`, indexed |
+| Knowledge useful beyond one epic | `_docs/knowledge/`, indexed |
 | Navigation, commands, workflow rules | `AGENTS.md` or an index |
 | What the agent did this session | The reply or commit message, not a note |
 | Exploration write-up with data | A report, via `exploration-report` |
 
-When the destination is unclear, keep the content out of durable repository docs (in chat, `/tmp`, or ignored scratch space) until it is classified.
+When the destination is unclear, keep the content out of durable repository docs (in chat, `/tmp`, or `_docs/scratch/`) until it is classified.
 
 ## One Current View
 
@@ -119,7 +119,7 @@ If the repository provides `memoryctl closeout` and `memoryctl verify` or equiva
 Memory comes in two kinds, and each has one home:
 
 - **Branch-local knowledge** describes the code on one branch: an epic's `index.md`, `status.md`, `progress.md`, and notes about its unmerged work. It lives on that branch.
-- **Shared knowledge** describes no single branch: the repository's direction, decision records, `AGENTS.md`, cross-epic `docs/knowledge/`, and specifications. It lives on the main line, so every session and worktree sees it. An output branch (talk, demo) or an epic is never its only home.
+- **Shared knowledge** describes no single branch: the repository's direction, decision records, `AGENTS.md`, cross-epic `_docs/knowledge/`, and specifications. It lives on the main line, so every session and worktree sees it. An output branch (talk, demo) or an epic is never its only home.
 
 Unless the repository or the user says otherwise:
 
@@ -143,7 +143,7 @@ Never put knowledge in `.gitignore`: an ignored file exists only in the checkout
 | [closeout-and-validation.md](references/closeout-and-validation.md) | Closeout for epic work, broader consolidation, validation, the review summary, or wiring memory hooks or CI |
 | [worktrees-and-branches.md](references/worktrees-and-branches.md) | Using several worktrees, coordinating parallel branches, merging branch-local notes, or abandoning a worktree |
 
-[`scripts/lint_knowledge.py`](scripts/lint_knowledge.py) checks numbered notes (`NNN-<topic>.md`) wherever they sit, which covers epic `knowledge/`, legacy `notes/`, `docs/knowledge/`, and stray piles, plus relative links in every scanned Markdown file; the full closeout runs it.
+[`scripts/lint_knowledge.py`](scripts/lint_knowledge.py) checks numbered notes (`NNN-<topic>.md`) wherever they sit, which covers epic `knowledge/`, legacy `notes/`, `_docs/knowledge/`, and stray piles, plus relative links in every scanned Markdown file; the full closeout runs it.
 
 ## Done
 

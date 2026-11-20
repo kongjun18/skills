@@ -52,8 +52,9 @@ ask the user:
 - `BUILD_DIR`: where the latest build left `main.aux`, `.log`, `.blg`, and
   `.pdf`. Rebuild first if the sources are newer; `mechanical.py` warns when
   the build is stale.
-- `OUT`: a new run directory, for example `<scratch>/integrity/<YYYYMMDD_HHMM>`.
-  Never put it inside the manuscript repository.
+- `OUT`: a new run directory, `_docs/scratch/integrity/<YYYYMMDD_HHMM>` in the
+  manuscript repository, never committed (the shared
+  [`_docs/` layout](../repo-memory/references/docs-layout.md)).
 - `CACHE`: an optional shared HTTP cache file, so reruns do not repeat lookups.
 - `LOCAL_PDFS`: an optional directory of author-supplied `<key>.pdf` files for
   paywalled sources.

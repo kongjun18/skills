@@ -84,6 +84,19 @@ def check_links(md: Path, errors: list[str]) -> None:
             errors.append(f"{md.relative_to(REPO)}: broken link -> {target}")
 
 
+# Generated-document locations replaced by the _docs/ layout
+# (repo-memory/references/docs-layout.md). Skills must not name them.
+LEGACY_DOC_PATHS = re.compile(
+    r"(?<![\w/])(docs/(?:epics|knowledge|specs)|reports/<|tutorials/<|temp/PR_|RESTACK-RESTORE-<YYYYMMDD>\.md` at the repository root)"
+)
+
+
+def check_doc_paths(path: Path, errors: list[str]) -> None:
+    for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if m := LEGACY_DOC_PATHS.search(line):
+            errors.append(f"{path.relative_to(REPO)}:{n}: legacy document path {m.group(1)!r}; use the _docs/ layout")
+
+
 def maintained_in_agents() -> set[str]:
     text = (REPO / "AGENTS.md").read_text(encoding="utf-8")
     m = re.search(r"^## Maintained Skills\n(.*?)^## ", text, flags=re.S | re.M)
@@ -148,6 +161,8 @@ def main() -> int:
             warnings.append(f"{d.name}/SKILL.md: {lines} lines (budget {args.max_lines})")
         for md in d.rglob("*.md"):
             check_links(md, errors)
+        for f in [*d.rglob("*.md"), *d.rglob("*.py")]:
+            check_doc_paths(f, errors)
 
     check_links(REPO / "AGENTS.md", errors)
     listed = maintained_in_agents()

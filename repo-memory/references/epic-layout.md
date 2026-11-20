@@ -9,22 +9,22 @@ Read when creating or editing an epic, its files, a knowledge note, a decision, 
 - project overview links;
 - build, test, lint, and development commands;
 - links to specifications and repo-level knowledge;
-- links to active epics (or to `docs/epics/index.md`);
+- links to active epics (or to `_docs/epics/index.md`);
 - the memory workflow and where durable knowledge belongs.
 
 **`CLAUDE.md`**, when Claude Code is used, should contain `@AGENTS.md` plus only truly Claude-specific rules. It does not restate the memory system.
 
 ## Directory Roles
 
-- `docs/specs/`: accepted specifications, and drafts labeled as drafts.
-- `docs/knowledge/`: repo-level knowledge useful across epics, with an `index.md`.
-- `docs/epics/index.md`: one line per epic, linking its `index.md`.
-- `docs/epics/<slug>/knowledge/`: the epic's atomic topic notes. Named `knowledge/` so nobody reads it as temporary notes. A repository that already uses `notes/` keeps it; do not keep both in one epic.
-- `docs/epics/<slug>/archive/`: inactive material kept for context. `archive/` is a location, not a status: archived content already says whether it is superseded, expired, invalid, or completed, and indexes do not list it as current.
+- `_docs/specs/`: accepted specifications. A draft lives in the epic that develops it and moves here when accepted.
+- `_docs/knowledge/`: repo-level knowledge useful across epics, with an `index.md`.
+- `_docs/epics/index.md`: one line per epic, linking its `index.md`.
+- `_docs/epics/<slug>/knowledge/`: the epic's atomic topic notes. Named `knowledge/` so nobody reads it as temporary notes. A repository that already uses `notes/` keeps it; do not keep both in one epic.
+- `_docs/epics/<slug>/archive/`: inactive material kept for context. `archive/` is a location, not a status: archived content already says whether it is superseded, expired, invalid, or completed, and indexes do not list it as current.
 
 ## Epics
 
-Create an epic only for work that spans multiple tasks, commits, sessions, modules, or parallel workers and benefits from persistent state. When long-running work has no epic, create the smallest useful scaffold and list it in `docs/epics/index.md` before writing epic memory.
+Create an epic only for work that spans multiple tasks, commits, sessions, modules, or parallel workers and benefits from persistent state. When long-running work has no epic, create the smallest useful scaffold and list it in `_docs/epics/index.md` before writing epic memory.
 
 **`index.md`** is the stable entry point. It answers: what the epic is and why it exists, its goal and scope, which modules matter, where status and progress live, and which notes matter most. Link notes rather than copying their content; keep it stable rather than using it as a log.
 
@@ -88,12 +88,12 @@ A decision is an authorized choice among meaningful alternatives that constrains
 
 Record a local epic decision in the relevant topic note. Promote it to an ADR or dedicated decision record only when it is long-lived, cross-cutting, expensive to reverse, formally reviewed, or likely to outlive the epic. When an accepted decision changes an accepted requirement, update the specification once authorized, so two divergent current truths never coexist.
 
-## Promotion to `docs/knowledge/`
+## Promotion to `_docs/knowledge/`
 
 Promote knowledge that is useful beyond the epic: architecture behavior, domain rules, test or deployment practice, recurring failures, long-term constraints, accepted cross-cutting decisions. To promote:
 
 1. update the canonical repo-level document on the main line ([commit policy](../SKILL.md#commit-policy)), abstracting away temporary epic detail;
-2. update `docs/knowledge/index.md` (or the relevant index);
+2. update `_docs/knowledge/index.md` (or the relevant index);
 3. link the epic note and the repo-level document when useful.
 
 The repo-level document becomes the shared current view; the epic note keeps local evidence and context and does not maintain a second copy of the current claim.

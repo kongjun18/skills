@@ -64,7 +64,7 @@ Never merge, squash, or fast-forward an epic into `main` yourself. When an epic'
 Before any `git rebase` or `gt restack`, make the old state recoverable, then rewrite. Read [rebase-restack.md](references/rebase-restack.md) before running the operation; it has the commands, the restore-doc format, and the conflict procedure.
 
 - **Backups first.** Create `backup/<YYYYMMDD-HHMMSS>/<branch>` for every branch the operation will move (one stamp per operation, created without `-f`).
-- **Restore doc second.** Record each branch's SHA, Graphite parent, upstream, and the backup prefix in `RESTACK-RESTORE-<YYYYMMDD>.md` at the repository root. Never overwrite an existing one: mark stale sections OUTDATED and append.
+- **Restore doc second.** Record each branch's SHA, Graphite parent, upstream, and the backup prefix in `_docs/scratch/restack/RESTACK-RESTORE-<YYYYMMDD>.md` in the checkout you operate in. Never overwrite an existing one: mark stale sections OUTDATED and append.
 - **`--onto` after a parent moves.** Move a child with `git rebase --onto <new-parent-tip> <old-parent-tip> <child>`, never a plain `git rebase <parent>`.
 - **Layering rule for conflicts.** Classify each hunk as additive (keep the descendant's), base rename or refactor (take the base's form, update the descendant), or convergent (take the base's copy and drop the empty commit). Use `zdiff3` conflict style so the ancestor is visible.
 - **Verify, do not push.** Build and test every restacked tip, check its diff against the new base and against its backup, keep the backup branches, and push only when the user asks.

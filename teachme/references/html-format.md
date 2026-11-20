@@ -4,7 +4,7 @@ Read before writing. The template, [tutorial-template.html](../assets/tutorial-t
 
 ## File
 
-- Path: `<project-root>/tutorials/<slug>.html`, slug in kebab case (`raft-log-replication.html`). One file per tutorial; images, if any, in `tutorials/<slug>-assets/`, linked relatively.
+- Path: `<project-root>/_docs/tutorials/<slug>.html`, slug in kebab case (`raft-log-replication.html`). One file per tutorial; images, if any, in `_docs/tutorials/<slug>-assets/`, linked relatively.
 - `<html data-kind>`: `repo`, `concept`, or `research`.
 - Meta: `tutorial-subject`, `tutorial-generated` (YYYY-MM-DD), and for repo tutorials `source-commit` (full hash). Delete `source-commit` for other kinds.
 - The page is self-contained: inline CSS and JS. Mermaid, KaTeX, and highlight.js load from a CDN only when the page uses them, so diagrams, math, and highlighting need internet; everything else works offline.
@@ -32,7 +32,7 @@ Generate each citation and excerpt with the bundled script, then paste its outpu
 
 ```bash
 python3 <skill>/scripts/excerpt.py --repo <repo-root> --commit <source-commit> \
-  --tutorial tutorials/<slug>.html --lang c src/sched.c:120-148
+  --tutorial _docs/tutorials/<slug>.html --lang c src/sched.c:120-148
 ```
 
 - Output: `<a class="src" data-loc="src/sched.c:120-148" href="...">src/sched.c:120–148</a>` then `<pre><code class="language-c">` with the escaped lines. Put the citation at the end of the sentence that introduces the excerpt, so it sits just above the code. A citation without an excerpt goes at the end of the sentence it supports.

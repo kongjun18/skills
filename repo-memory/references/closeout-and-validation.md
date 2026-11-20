@@ -25,7 +25,7 @@ A normal closeout does not reorganize the knowledge tree. Consolidate an epic mo
 Run the linter over the touched scope:
 
 ```bash
-python3 <skill-dir>/scripts/lint_knowledge.py docs/epics/<slug>   # or docs
+python3 <skill-dir>/scripts/lint_knowledge.py _docs/epics/<slug>   # or docs
 ```
 
 It exits 1 on findings and 2 when the path is missing or holds no Markdown at all. It reports pointer-only and empty notes, duplicate title stems, reused IDs (including archived ones), an epic with both `knowledge/` and `notes/`, flat piles without an index, and broken relative links. It skips ADR folders (`adr/`, `adrs/`, `decisions/`), whose superseded-by links are their convention. It cannot tell whether two differently named notes cover one topic, so a clean run is necessary, not sufficient. Then check by reading:
