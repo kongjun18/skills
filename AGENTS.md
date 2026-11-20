@@ -28,6 +28,10 @@ Research:
 - `system-research-scout`: evidence-bound survey of recent systems-conference papers into research ideas.
 - `pull-recent-papers`: weekly arXiv digest and research radar.
 
+Learning:
+
+- `tutorial`: self-contained HTML tutorials that teach a repository, concept, or research direction, with a structural checker.
+
 Papers and talks:
 
 - `paper-writer`: single entry point for writing paper text — outline, draft, rebuild from old material, refine, simplify; owns the shared terminology contract.

@@ -1,6 +1,6 @@
 ---
 name: high-signal-writing
-description: Write concise, reader-first agent responses in conversation. Use for final answers, progress updates, clarifying questions, status responses, explanations, recommendations, comparisons, and blocked-task handoffs. Apply progressive disclosure, distinguish facts from uncertainty, surface material risk, and stop once the user can act correctly. Do not use this skill to author papers, reports, design documents, benchmark documents, repository notes, or other generated artifacts.
+description: Write concise, reader-first agent responses in conversation. Use for final answers, progress updates, clarifying questions, status responses, explanations, recommendations, comparisons, and blocked-task handoffs. Apply progressive disclosure, distinguish facts from uncertainty, surface material risk, and stop once the user can act correctly. Do not use this skill to author papers, reports, design documents, benchmark documents, repository notes, or other generated artifacts; for an in-depth tutorial that teaches a repository, concept, or research direction, use tutorial.
 ---
 
 # High-Signal Agent Responses
