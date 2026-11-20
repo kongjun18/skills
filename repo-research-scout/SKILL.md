@@ -20,37 +20,39 @@ census (API only) → T0 select (no model) → T1 triage (cheap) → T2 analysis
 3. **Quotes are verbatim.** `ingest` and `verify` reject any quote not found in the stored item text. Never paraphrase inside quotation marks.
 4. **Never re-pull or re-analyze what has not changed.** Always go through `scout.py`; it syncs incrementally and exports only cache misses (an analysis is reused while the item text, the study context, and the stage brief are unchanged).
 5. **No model or effort is hard-coded.** Tiers are capability classes; the study's `[tiers]` table may name the host's models and efforts, and empty values mean the host's own choice for that class.
-6. **Outputs live outside this skills repository.** The study directory belongs in the user's working repository; the cache and scratch live in the central store.
+6. **Outputs live outside this skills repository.** The view belongs in the user's project; the store lives in the XDG directories ([Storage](#storage)).
 
 ## Storage
 
-Two places with one-way flow: the central store is a cache, the study directory is the record. Nothing is synchronized back.
+The central store is the source of truth; the project holds a view of it. Data flows one way, from the store into the view, through `scout.py snapshot`. Locations follow the XDG base directories (each `XDG_*` variable overrides its default):
 
 ```
-$REPO_SCOUT_HOME/  (default ~/.local/share/repo-scout/; cache, never cited, rebuildable)
+~/.local/share/agent-skills/repo-research-scout/    data: source of truth
 ├── registry.json                 index: repository → database, registration and last-sync times
-├── db/<owner>__<repo>.sqlite     one per GitHub repository: census, comments, state changes,
-│                                 selections, analyses (the model-output cache), batch records
-└── work/<study id>/              scratch: batches/, results/, metrics/, digests/
+└── db/<owner>__<repo>.sqlite     one per GitHub repository: census, comments, state changes,
+                                  selections, analyses (the paid model outputs), batch records
+~/.local/state/agent-skills/repo-research-scout/<study id>/
+├── batches/  results/            resumable T1/T2 work in flight
+~/.cache/agent-skills/repo-research-scout/<study id>/
+├── metrics/  digests/            regenerable agent inputs
 
-<working repo>/_research/         external research overlay, not part of the project
-├── README.md                     says so, for humans and agents
-└── <YYYY-MM-DD>-<slug>/          one study = one exploration report
-    ├── report.md                 for the user
-    ├── hypotheses.md             for the user: all hypothesis cards
-    ├── study.toml                configuration
-    └── data/evidence.sqlite      frozen evidence the report cites (scout.py snapshot)
+<project>/_docs/explorations/<YYYY-MM-DD>-<slug>/     view: the exploration report directory
+├── report.md                     for the user
+├── hypotheses.md                 for the user: all hypothesis cards
+├── study.toml                    the study's configuration
+└── data/evidence.sqlite          the view of the store the report cites
 ```
 
-- Reuse across studies is automatic: a peer synced for one study is already cached for the next. `scout.py registry` prints the index.
-- The cache is mutable; the report cites only `data/evidence.sqlite`. Update it in place with `snapshot`; git history keeps earlier versions.
+- The project directory follows `exploration-report`'s Report Directory and the shared [`_docs/` layout](../repo-memory/references/docs-layout.md), including its commit policy for repositories you do not own.
+- Reuse across studies is automatic: a peer synced for one study is already in the store for the next. `scout.py registry` prints the index.
+- The store is mutable; the report cites only `data/evidence.sqlite`. Re-running `snapshot` replaces it; git history keeps earlier versions where the directory is committed.
 - The user reads `report.md` and `hypotheses.md`. Everything else is for agents and scripts; do not ask the user to read it.
 
 ## Workflow
 
 ### 1. Set up the study
 
-1. Create the study directory as an exploration report directory (see `exploration-report`, Report Directory; a studied codebase uses `_research/`). Copy [assets/study.toml](assets/study.toml) into it and give the study a unique `id`; scratch goes to `$REPO_SCOUT_HOME/work/<id>/`, so the working repository needs no ignore rules.
+1. Create the study directory `_docs/explorations/<YYYY-MM-DD>-<slug>/` in the project ([Storage](#storage)). Copy [assets/study.toml](assets/study.toml) into it and give the study a unique `id`; its work in flight and derived files go to the XDG state and cache directories, not the project.
 2. Fill `targets`, `peers`, and the window (default 24 months; set `window_start` for a fixed, reproducible window).
 3. Define `[components]` from the target's directory layout (path prefixes) and, where the repository uses area labels, `[label_components]`. Components come from the code, not from keywords.
 4. Turn each research direction into a `[[directions]]` entry with a `question` and `keywords`. Keywords decide T0 recall; include synonyms and the repository's own vocabulary (read a few titles if unsure).
@@ -83,12 +85,12 @@ python3 <skill>/scripts/scout.py export --study S/study.toml --stage t1 [--max-i
 
 `export` prints each batch path and the estimated input tokens; it fetches comments for T2 items first. Dispatch one subagent per batch (in parallel where the host allows), using the stage's tier from `[tiers]`, with this prompt:
 
-> Read `<skill>/references/<t1-triage|t2-analysis>.md` and follow it. Process the batch `<batch path>`. Write the JSONL results to `$REPO_SCOUT_HOME/work/<study id>/results/<batch id>.jsonl`. Reply with only the number of lines written.
+> Read `<skill>/references/<t1-triage|t2-analysis>.md` and follow it. Process the batch `<batch path>`. Write the JSONL results to the path in the batch file's `results` field. Reply with only the number of lines written.
 
 Then ingest each result and record what ran it:
 
 ```bash
-python3 <skill>/scripts/scout.py ingest --study S/study.toml --batch <batch.json> <results.jsonl> --model <model> --effort <effort>
+python3 <skill>/scripts/scout.py ingest --study S/study.toml --batch <batch.json> --model <model> --effort <effort>
 ```
 
 `ingest` validates fields, enums, directions, components, and verbatim quotes, stores valid lines, and lists rejected or missing items. Rejected items stay cache misses, so the next `export` re-offers them; re-dispatch once, then leave persistent failures out and note them.
@@ -98,8 +100,8 @@ T2 reads only items T1 marked `escalate` with at least one direction, at most `b
 ### 5. Metrics and digests
 
 ```bash
-python3 <skill>/scripts/scout.py metrics --study S/study.toml     # → work/<id>/metrics/
-python3 <skill>/scripts/scout.py digest  --study S/study.toml     # → work/<id>/digests/
+python3 <skill>/scripts/scout.py metrics --study S/study.toml     # → cache <study id>/metrics/
+python3 <skill>/scripts/scout.py digest  --study S/study.toml     # → cache <study id>/digests/
 ```
 
 `component_quarter.csv` gives, per component, quarter, and kind (issue or PR): opened, still open, closed, fraction closed within 90 days (only cohorts at least 90 days old), median and p90 days to close, distinct authors, maintainer-authored, reverts, and bug-labeled. An item's component comes from the files of its PR or linked PRs, then labels, then the model's guess. `direction_root_causes.csv` cross-tabulates the T2 analyses. Digests are one compact line per analyzed item, grouped by direction; they are T3's input.
@@ -114,7 +116,7 @@ Using the T3 tier, follow [references/synthesis.md](references/synthesis.md): co
 python3 <skill>/scripts/scout.py snapshot --study S/study.toml     # → <study dir>/data/evidence.sqlite
 ```
 
-The evidence file is one SQLite file: census metadata for the window with each item's component (no bodies), selections, all analyses with model, effort, and prompt version, sync history, the metrics tables, and a manifest (study file, window, reference time, brief versions). `metrics --from-snapshot <file> --out DIR` recomputes the metrics tables from it exactly. Commit it with the report. Write the report with `exploration-report`, presenting the numbers the user needs as tables in the report itself and citing the snapshot as their source.
+The evidence file is one SQLite file: census metadata for the window with each item's component (no bodies), selections, all analyses with model, effort, and prompt version, sync history, the metrics tables, and a manifest (study file, window, reference time, brief versions). `metrics --from-snapshot <file> --out DIR` recomputes the metrics tables from it exactly. It is committed with the report wherever the report is committed. Write the report with `exploration-report`, presenting the numbers the user needs as tables in the report itself and citing the snapshot as their source.
 
 ## Controlling cost
 
@@ -132,7 +134,7 @@ The evidence file is one SQLite file: census metadata for the window with each i
 
 ## Updating a study
 
-Re-run steps 2–5: sync fetches only changes, and export offers only new or changed items. Then revise the synthesis, re-run `snapshot` (it replaces `data/evidence.sqlite`; git keeps the previous version), and update the report.
+Re-run steps 2–5: sync fetches only changes, and export offers only new or changed items. Then revise the synthesis, re-run `snapshot` (it replaces `data/evidence.sqlite`), and update the report.
 
 ## Done criteria
 

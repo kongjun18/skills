@@ -8,11 +8,13 @@ model analyses keyed by (study, stage, item, input hash, prompt version), so
 nothing is re-pulled or re-analyzed unless it changed. A registry file indexes
 the databases so peer repositories are reused across studies.
 
-The central store ($REPO_SCOUT_HOME, default ~/.local/share/repo-scout) is a
-cache plus per-study scratch (work/<study id>/); it is never cited. The study
-directory in the working repository holds only the record: study.toml,
-hypotheses.md, the report, and data/evidence.sqlite, written by `snapshot`.
-Data flows one way, from the cache into the study directory.
+Storage follows the XDG base directories under agent-skills/repo-research-scout/:
+  data  (${XDG_DATA_HOME:-~/.local/share})   source of truth: registry.json, db/
+  state (${XDG_STATE_HOME:-~/.local/state})  per-study batches/ and results/ (resumable)
+  cache (${XDG_CACHE_HOME:-~/.cache})        per-study metrics/ and digests/ (regenerable)
+The study directory in the project (_docs/explorations/<date>-<slug>/) is a
+view: study.toml, hypotheses.md, the report, and data/evidence.sqlite, which
+`snapshot` exports from the source of truth. Data flows one way, into the view.
 
 Model work happens outside this script: `export` writes batch files of cache
 misses, the host agent analyzes them with the brief for the stage, and
@@ -24,7 +26,7 @@ Commands:
   sync      --study S | REPO [--window-months N]
   select    --study S [--repo R --query "kw1,kw2" --name NAME --limit N]
   export    --study S --stage t1|t2 [--max-items N] [--max-tokens N]
-  ingest    --study S --batch B.json RESULTS.jsonl [--model M] [--effort E]
+  ingest    --study S --batch B.json [RESULTS.jsonl] [--model M] [--effort E]
   metrics   --study S [--out DIR] | --from-snapshot EVIDENCE.sqlite --out DIR
   digest    --study S [--out DIR]
   verify    --study S                  checks <study dir>/hypotheses.md
@@ -53,8 +55,14 @@ from pathlib import Path
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SKILLS_REPO = SKILL_DIR.parent
-HOME = Path(os.environ.get("REPO_SCOUT_HOME", "~/.local/share/repo-scout")).expanduser()
-REGISTRY = HOME / "registry.json"
+def xdg(var: str, default: str) -> Path:
+    return Path(os.environ.get(var) or default).expanduser() / "agent-skills" / "repo-research-scout"
+
+
+DATA = xdg("XDG_DATA_HOME", "~/.local/share")
+STATE = xdg("XDG_STATE_HOME", "~/.local/state")
+CACHE = xdg("XDG_CACHE_HOME", "~/.cache")
+REGISTRY = DATA / "registry.json"
 BRIEFS = {"t1": SKILL_DIR / "references" / "t1-triage.md",
           "t2": SKILL_DIR / "references" / "t2-analysis.md"}
 MAINTAINER = {"OWNER", "MEMBER", "COLLABORATOR"}
@@ -166,12 +174,12 @@ def load_registry() -> dict:
 
 
 def save_registry(reg: dict) -> None:
-    HOME.mkdir(parents=True, exist_ok=True)
+    DATA.mkdir(parents=True, exist_ok=True)
     REGISTRY.write_text(json.dumps(reg, indent=2, sort_keys=True) + "\n")
 
 
 def db_path(repo: str, create: bool = False) -> Path:
-    path = HOME / "db" / (repo.replace("/", "__") + ".sqlite")
+    path = DATA / "db" / (repo.replace("/", "__") + ".sqlite")
     if path.exists():
         return path
     if not create:
@@ -224,7 +232,7 @@ def load_study(path: str) -> dict:
     if len(cfg["window_start"]) == 10:
         cfg["window_start"] += "T00:00:00Z"
     cfg["_path"], cfg["_dir"], cfg["_hash"] = p, p.parent, sha(raw.decode())
-    cfg["_work"] = HOME / "work" / cfg["id"]
+    cfg["_state"], cfg["_cache"] = STATE / cfg["id"], CACHE / cfg["id"]
     return cfg
 
 
@@ -462,7 +470,7 @@ def export(cfg: dict, stage: str, max_items: int | None, max_tokens: int | None)
     pv, ctx = prompt_version(stage), context_for(cfg)
     ctx_json = json.dumps(ctx, sort_keys=True)
     brief_tokens = len(BRIEFS[stage].read_text()) // 4
-    out_dir = cfg["_work"] / "batches"
+    out_dir = cfg["_state"] / "batches"
     out_dir.mkdir(parents=True, exist_ok=True)
     picked, hits, tokens = [], 0, 0
     pending_comments = defaultdict(list)
@@ -491,8 +499,11 @@ def export(cfg: dict, stage: str, max_items: int | None, max_tokens: int | None)
         bid = f"{stage}-{stamp}-{i // size:03d}"
         path = out_dir / f"{bid}.json"
         est = sum(len(x["text"]) // 4 for x in chunk) + brief_tokens
+        results = cfg["_state"] / "results" / f"{bid}.jsonl"
+        results.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps({"batch_id": bid, "study": cfg["id"], "stage": stage, "prompt_version": pv,
-                                    "brief": str(BRIEFS[stage]), "context": ctx, "items": chunk}, indent=1))
+                                    "brief": str(BRIEFS[stage]), "results": str(results), "context": ctx,
+                                    "items": chunk}, indent=1))
         for repo in {x["key"].split("#")[0] for x in chunk}:
             con = connect(repo)
             con.execute("INSERT OR REPLACE INTO batches VALUES(?,?,?,?,?,?,?,?)",
@@ -530,8 +541,9 @@ def validate(stage: str, rec: dict, item: dict, ctx: dict) -> list[str]:
     return errs
 
 
-def ingest(cfg: dict, batch_path: str, results: str, model: str, effort: str) -> None:
+def ingest(cfg: dict, batch_path: str, results: str | None, model: str, effort: str) -> None:
     batch = json.loads(Path(batch_path).read_text())
+    results = results or batch["results"]
     if batch["study"] != cfg["id"]:
         raise SystemExit("batch belongs to a different study")
     stage, items = batch["stage"], {x["key"]: x for x in batch["items"]}
@@ -832,7 +844,7 @@ def main() -> None:
     s.add_argument("--stage", choices=["t1", "t2"], required=True)
     s.add_argument("--max-items", type=int); s.add_argument("--max-tokens", type=int)
     s = sub.add_parser("ingest"); s.add_argument("--study", required=True); s.add_argument("--batch", required=True)
-    s.add_argument("results"); s.add_argument("--model", default="unspecified"); s.add_argument("--effort", default="unspecified")
+    s.add_argument("results", nargs="?"); s.add_argument("--model", default="unspecified"); s.add_argument("--effort", default="unspecified")
     s = sub.add_parser("digest"); s.add_argument("--study", required=True); s.add_argument("--out")
     s = sub.add_parser("snapshot"); s.add_argument("--study", required=True); s.add_argument("--out")
     s = sub.add_parser("metrics"); s.add_argument("--study"); s.add_argument("--from-snapshot")
@@ -870,9 +882,9 @@ def main() -> None:
     elif a.cmd == "ingest":
         ingest(cfg, a.batch, a.results, a.model, a.effort)
     elif a.cmd == "metrics":
-        metrics(cfg, Path(a.out) if a.out else cfg["_work"] / "metrics")
+        metrics(cfg, Path(a.out) if a.out else cfg["_cache"] / "metrics")
     elif a.cmd == "digest":
-        digest(cfg, Path(a.out) if a.out else cfg["_work"] / "digests")
+        digest(cfg, Path(a.out) if a.out else cfg["_cache"] / "digests")
     elif a.cmd == "snapshot":
         snapshot(cfg, Path(a.out) if a.out else cfg["_dir"] / "data" / "evidence.sqlite")
     elif a.cmd == "verify":

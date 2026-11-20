@@ -1,7 +1,7 @@
 # Study configuration for repo-research-scout. Copy into the study directory
-# (the exploration report directory) and fill in.
+# (_docs/explorations/<YYYY-MM-DD>-<slug>/) and fill in.
 
-id = "example-study"                 # unique per study; keys selections, analyses, and scratch
+id = "example-study"                 # unique per study; keys selections, analyses, and state
 targets = ["owner/repo"]             # repositories studied in full (census + metrics)
 peers = []                           # repositories searched only per cluster (generality test)
 window_months = 24                   # census covers items updated in the window, plus all open items
