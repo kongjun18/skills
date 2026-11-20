@@ -26,7 +26,7 @@ learner + goal → sources → mental model + outline → write HTML → check s
 Settle three things before reading sources:
 
 - **Subject and kind**: `repo` (a codebase), `concept` (an idea, algorithm, protocol, or technique), or `research` (a research direction or problem area). A repository tutorial about one concept it implements is still `repo`.
-- **Learner**: what they already know. Use the user's profile or memory when the harness provides one; ask only about what it does not settle.
+- **Learner**: what they already know. Read `${XDG_CONFIG_HOME:-~/.config}/agent-skills/user-profile/profile.md` if it exists, and any harness memory; ask only about what they do not settle.
 - **Goal and depth**: what the learner must be able to do afterward ("modify the scheduler", "read papers in this area", "explain why X beats Y"). The goal fixes the scope: material that does not serve it goes to Further reading.
 
 If the request already settles these, state your reading in one line and proceed. Otherwise ask, in one batch.
