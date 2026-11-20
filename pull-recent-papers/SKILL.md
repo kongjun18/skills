@@ -1,295 +1,239 @@
 ---
 name: pull-recent-papers
 description: >-
-  Weekly arXiv digest and research radar for a storage-focused systems researcher: fetch recent cs.DB/OS/DC/AR/PF
-  preprints, filter and rank them by storage proximity, evaluate them, and write a week-in-review with highlights
-  and directions as JSON, Markdown, and frozen-style HTML in a user-chosen digest directory. Use for "weekly digest",
-  "arXiv roundup", "what's new on arXiv", "recent storage/systems papers this week", "last N days of papers".
-  For a survey of conference proceedings or evidence-bound research ideas from top venues, use
-  system-research-scout.
+  Configurable weekly arXiv digest and research radar: fetch a recent window of preprints for chosen arXiv
+  categories (the bundled default is a storage-systems taxonomy over cs.DB/OS/DC/AR/PF), classify them against a
+  custom tier/topic taxonomy, evaluate them, and write a week-in-review with highlights and directions as JSON,
+  Markdown, and frozen-style HTML in a user-chosen digest directory. Settings live in a per-user TOML config, and an
+  optional reader context frames the digest without filtering it. Use for "weekly digest", "arXiv roundup", "what's
+  new on arXiv", "recent papers this week", "last N days of papers", "customize my arXiv digest". For a survey of
+  conference proceedings or evidence-bound research ideas from top venues, use system-research-scout.
 ---
 
 # Pull Recent Papers
 
-A five-stage pipeline that turns a week of arXiv systems papers into a curated,
-evaluated digest for a storage researcher:
+A five-stage pipeline that turns a window of arXiv papers into a curated,
+evaluated digest for one reader:
 
 ```
-fetch  →  filter  →  ranking  →  evaluation  →  presentation
+configure (first launch)  →  fetch  →  filter  →  ranking  →  evaluation  →  presentation
 ```
 
-- **fetch** — pull the raw candidates from arXiv (script).
-- **filter** — keep only the window + storage-relevant papers (script gate +
+- **fetch**: pull the raw candidates from arXiv (script).
+- **filter**: keep only window- and field-relevant papers (script gate, then
   agent curation).
-- **ranking** — order by storage-proximity ring/topic (script), then by
-  strength within a topic (agent).
-- **evaluation** — read abstracts, judge each kept paper for
-  novelty/relevance/promise, and read the week as a whole for trends (agent).
-- **presentation** — the grouped digest, plus a week-in-review and a highlighted
-  set of the most inspiring/promising papers (agent).
+- **ranking**: order by tier and topic priority (script), then by strength
+  within a topic (agent).
+- **evaluation**: judge each kept paper for novelty, relevance, and promise,
+  and read the week as a whole for trends (agent).
+- **presentation**: week-in-review, highlights, and the grouped digest (agent),
+  rendered to HTML by script.
 
-Stages 1–3 are mostly deterministic (script + light curation); stages 4–5 are
-where the agent adds judgment.
+Stages 1-3 are mostly deterministic; stages 4-5 are where the agent adds
+judgment.
 
-## Digest directory
+## Paths
 
-Ask the user where digests live (for example `~/projects/research-radar/digests/`)
-and call it `DIR`. All outputs go there, never into the skills repository. The
-scripts use only the Python standard library (plus `pdftotext` for the
-affiliation fallback); `<skill-dir>` below is the directory containing this file.
+- **`DIR`, the digest directory.** Ask the user where digests live (for example
+  `~/notes/arxiv-digests/`). All outputs go there, never into the skills
+  repository; the render scripts refuse such a path.
+- **`$SKILL`**: the directory containing this file.
+- **`$CONF`**: `${XDG_CONFIG_HOME:-~/.config}/agent-skills/pull-recent-papers/`,
+  holding the user's `config.toml` and optional `context.md`.
+
+The scripts use only the Python standard library (3.11+ for `tomllib`), plus
+`pdftotext` for the affiliation fallback.
+
+## Configuration
+
+Everything field- or reader-specific lives in one TOML file. The fetch script
+uses `--config PATH`, else `$CONF/config.toml`, else the bundled
+[`assets/default-config.toml`](assets/default-config.toml) (a storage-systems
+taxonomy with no personal settings). Sections: `[digest]` (title, field,
+categories, `strict_categories`, window), `[reader]` (`context_file`,
+`interests`, `author_names`), `[ranking]` (within-topic preferences),
+`[[tiers]]`, and `[[topics]]` (regex patterns, first match wins, unmatched
+papers fall into the one catch-all tier).
+
+Inspect and validate the resolved config, including the reader context path in
+use, without fetching:
+
+```bash
+python3 $SKILL/scripts/fetch_arxiv.py --show-config
+```
+
+Read [references/configuration.md](references/configuration.md) when
+customizing the config, fixing a `--show-config` error, or tuning coverage and
+keyword misfires.
+
+### First launch
+
+If `$CONF/config.toml` does not exist, before fetching anything:
+
+1. Run `--show-config` and summarize the default for the user: field,
+   categories, tiers and their topics, that no interests or author names are
+   set, and which reader context (if any) was found.
+2. Ask whether to **use the default** or **customize it**, and wait for the
+   answer.
+3. **Default:** copy it unchanged so later runs do not ask again:
+   `mkdir -p $CONF && cp $SKILL/assets/default-config.toml $CONF/config.toml`.
+4. **Customize:** follow "Customizing" in
+   [references/configuration.md](references/configuration.md), then confirm
+   the `--show-config` summary with the user before the first fetch.
+
+Never overwrite an existing config or context file without asking. The bundled
+default stays generic; personal settings go only in `$CONF`.
 
 ## Reader context
 
-Look for an optional **`context.md`** in `DIR`, the directory that receives
-the digest outputs. This is a user-owned file: the user
-may create or update it to describe who the digest is for, current projects,
-research interests, nearby group or advisor lines, available testbeds, and desired
-framing. It is free-form Markdown with no required schema.
+The reader context is free-form Markdown about who the digest is for. The fetch
+script resolves it (`--show-config` prints the result) in this order:
 
-- If `context.md` exists, read it before ranking/evaluation and use it to identify
-  useful connections and tractable opportunities.
-- If it does not exist, continue without it. Do not require, create, or overwrite
-  the file.
-- Treat its contents as context, not filtering rules. Storage-proximity remains
-  the primary ranking principle, and work outside the reader's current projects
-  can still be the most important opening.
+1. `[reader] context_file`, relative to the config's directory (default
+   `$CONF/context.md`), if the file exists;
+2. else `${XDG_CONFIG_HOME:-~/.config}/agent-skills/user-profile/profile.md`,
+   the user's personal profile kept by the separate `user-profile` skill, if it
+   exists (read it only; this skill does not need that skill installed);
+3. else no context.
 
-Read the week as an opportunity radar: surface openings, tensions, and who's
-working on what, while retaining enough breadth for unfamiliar directions to
-appear.
+When there is no context at all, offer once to create `$CONF/context.md`: ask a
+few short questions following the sections of
+[`assets/context-template.md`](assets/context-template.md) (background,
+interests, current work, resources) and write the answers in that shape. If
+the user skips, proceed without context and do not ask again this session.
 
-## Storage-proximity taxonomy (three rings)
+Read the context, with `[reader] interests`, before ranking and evaluation.
 
-Papers are bucketed into three rings by how central they are to storage:
-
-- **Ring 1 — Core storage** (top interest): the I/O & OS storage stack, memory &
-  disaggregation, storage systems, distributed storage & consistency, DB storage
-  engines, and storage-for-AI.
-- **Ring 2 — Storage-facing adjacent** (secondary): databases, distributed data
-  processing, LLM inference systems, cloud storage, and OS memory — *only where
-  they touch storage/data/memory movement*.
-- **Ring 3 — Peripheral** (skim only): in-category systems papers with **no**
-  storage angle (e.g. FPGA accelerator design, consensus with no data plane, pure
-  ML-accuracy work). Kept terse so the reader can skim what was filtered out.
-
-The **exact topics and their keyword patterns are the `TOPICS` table at the top of
-`scripts/fetch_arxiv.py`** — that table is the ground truth the classifier runs on,
-so read it there rather than duplicating the keyword lists here (kept in one place,
-they can't drift). Topics are matched in order, most storage-central first, so the
-first match wins.
+**Context frames; it never filters.** Use the context and interests to order
+papers within the config's tier and topic priority and to note connections and
+tractable openings. Never drop or demote a strong paper because it falls outside
+the reader's interests. Keep breadth so unfamiliar directions still appear, and
+when a paper outside those interests is among the week's strongest, put it in
+the highlights.
 
 ## The pipeline
 
 ### 1. Fetch
 
-Run the fetch script. It queries arXiv (cs.DB, cs.OS, cs.DC, cs.AR, cs.PF),
-filters to the window, gates on primary category, tags each paper to a
-ring/topic, and prints a grouped Markdown digest (Core → Adjacent → Peripheral).
+The fetch script queries arXiv for the configured categories, filters to the
+window, gates on primary category, tags each paper with a tier and topic, and
+prints a grouped Markdown digest in tier order.
+
+**Pick the window so consecutive digests neither overlap nor leave gaps.** Find
+the newest `digest-*.json` in `DIR`; if it has `window.end`, start there with
+`--since`. Otherwise (first digest, or an older digest without `window`) use the
+config's `days`:
 
 ```bash
-python3 <skill-dir>/scripts/fetch_arxiv.py --days 7
+python3 $SKILL/scripts/fetch_arxiv.py --since 2026-10-20T14:43:00+00:00   # previous window.end
+python3 $SKILL/scripts/fetch_arxiv.py                                     # first run: last `days` days
 ```
 
-Flags: `--days N` (window, default 7), `--max-per-cat N` (cap on results pulled,
-default 200), `--json` (full structured output, every abstract), `--curated-json`
-(same but strips peripheral papers' abstracts — ~⅓ smaller, and you never read
-those abstracts anyway).
+The window is `[start, end)` with `end` = now. If the gap since the last digest
+is unusually long (say, over three weeks), tell the user and ask before pulling
+it all at once.
 
-**Default to the cheap path.** The plain Markdown output already truncates
-abstracts to ~500 chars, which is enough to *curate and rank*. Do that from
-Markdown, and only pull full abstracts — via `--curated-json`, or `WebFetch` on a
-single paper — for the handful of **highlight candidates** you actually need to
-judge in depth. Don't pull all full abstracts up front.
+Flags: `--config PATH`, `--days N` or `--since TIME`, `--max-per-cat N`
+(overrides `max_results`), `--json` (full structured output, every abstract),
+`--curated-json` (same, but strips catch-all papers' abstracts). JSON output
+carries `window` (`start`/`end`), `context_file`, `raw_count`, `oldest_raw`, and
+`truncated`; papers carry `topic`, `priority` (the tier id), and `skim` (true
+for the catch-all tier).
 
-The script uses only the Python standard library — no install step. arXiv
-requires HTTPS (plain http returns a 301). The final "Peripheral" topic is a
-catch-all, so nothing in-category is silently dropped — the script casts wide;
-later stages trim.
-
-The window filters on **first-submission date** (arXiv `published`), not last
-revision — so a paper first posted months ago but revised this week will *not*
-appear. This is a *newly-submitted* digest by design; don't expect revisions to
-resurface.
+- **Check truncation.** A `WARNING: window truncated` line (`truncated: true` in
+  JSON) means the query hit `max_results` inside the window. Re-run with a
+  larger `--max-per-cat` and tell the user to raise `max_results`.
+- **Default to the cheap path.** The Markdown output truncates abstracts to
+  about 500 characters, enough to curate and rank. Pull full abstracts
+  (`--curated-json`, or WebFetch on one paper) only for highlight candidates.
+- **First-submission date.** The window filters on arXiv `published`, not the
+  last revision, so a months-old paper revised this week does not appear.
 
 ### 2. Filter
 
-The script already applies the hard filters (window + primary-category gate).
-Now apply the *semantic* filter the keywords can't: read each paper and decide
-whether it truly belongs.
+The script applied the hard filters (window and primary category). Now apply
+the semantic filter the keywords cannot: decide whether each paper truly
+belongs to the configured `field`.
 
-- **Demote/drop by storage relevance, not keyword.** A paper that only hit
-  "cache" or "offload" in an ML/edge context (e.g. cross-timestep activation
-  caching, MCU inference offload) is *not* storage — push it to Peripheral or
-  drop it.
-- **Rescue** genuinely storage-relevant papers the keywords missed from
-  Peripheral into the right Ring-1/Ring-2 topic.
-- Correct any obviously mis-slotted topic within a ring.
+- **Demote or drop by relevance, not keyword.** A paper that hit a generic
+  keyword in an unrelated sense (in the default, "cache" in an edge-ML paper)
+  goes to the catch-all tier or is dropped.
+- **Rescue** relevant papers the keywords missed from the catch-all tier into
+  the right topic, and fix obviously mis-slotted topics.
+- To claim a theme is absent from the window, search the full `--json` output;
+  `--curated-json` strips catch-all abstracts.
+- **The reader's own papers.** A paper with an author in `[reader]
+  author_names` (check the affiliation too; names collide) is the reader's own.
+  Keep it in its topic with `"badge": "Your paper"`, leave it out of
+  highlights, most-inspiring, and directions, and note its closest neighbors.
 
 ### 3. Ranking
 
-Order the survivors.
-
-- **Across topics:** keep the ring order (Core → Adjacent → Peripheral) and the
-  topic order within each ring (see the taxonomy above; it runs most- to
-  least-storage-central).
-- **Within a topic:** float the strongest work to the top — real systems with
-  results over position papers, general mechanisms over narrow point solutions,
-  and anything that reads as an *opening* for the reader (use `context.md` when
-  present). Don't down-rank a paper for being outside any particular sub-area.
+- **Across topics:** keep the config's tier order and topic order.
+- **Within a topic:** apply `[ranking] preferences` in order, then the reader
+  context as described above.
 
 ### 4. Evaluation
 
-Judge the ranked papers. **Work from abstracts.** Only fetch the arXiv abstract
-page or PDF (WebFetch) when the abstract is genuinely insufficient to evaluate a
-paper you think might be a highlight — don't fetch by default.
+Work from abstracts; fetch the abstract page or PDF only when the abstract is
+insufficient for a likely highlight. Score each kept paper informally:
 
-Keep the reader context in mind when present: evaluation is not just "is this
-good work?" but "**is this an opening a storage researcher should know about?**"
-Use `context.md` to identify connections worth noting, not as a gate that filters
-everything else out.
+- **Novelty**: a new idea or an incremental delta?
+- **Relevance**: how central to the configured field (its tier and topic),
+  plus any connection to the reader context.
+- **Promise**: could it change how systems in the field are built, or open a
+  direction? Strong results, a surprising finding, or a clean general
+  mechanism all count.
 
-Score each kept paper informally on three axes:
+For the stronger papers, add an **opportunity read**; this turns the digest
+from a survey into a radar:
 
-- **Novelty** — is the idea new, or an incremental delta?
-- **Relevance** — how central is it to storage, plus any reader connection from
-  `context.md`?
-- **Promise** — could it change how storage systems are built, or open a
-  direction? Strong results, a surprising finding, or a clean general mechanism
-  all count.
+- **Entry point?** Does it open or survey a subfield, or list open problems?
+- **Crowded or wide open?** Use the affiliation data to tell an emerging
+  opening (one or two groups) from a crowded thread (several groups racing).
+- **Tractable?** A clean mechanism the reader can learn from and build on, or
+  an impressive industry system that is hard to approach? Note it; discard
+  neither.
+- **Connection?** Note any link to the reader context as an aside.
 
-Then, for the stronger papers, add an **opportunity read** — this is what turns
-the digest from a survey into an orientation/opportunity radar:
+A paper that opens a direction the reader could plausibly pursue is a
+**direction candidate** for "Directions for you". Also read the week as a
+whole: cluster papers into themes so you can speak to trends.
 
-- **Entry point?** — does it open a subfield, survey it, or (better) *explicitly
-  list open problems / future work*? Call these out; they are useful footholds for
-  exploring a direction.
-- **Crowded vs. wide-open?** — use the affiliation data below (how many distinct
-  groups are on this thread) to tell an *emerging* opening (one or two papers, no
-  incumbent) from a *crowded thread* (several groups already racing). Say which —
-  it shapes where attention pays off. Both are worth knowing about.
-- **Tractable to reason about?** — a clean, general mechanism the reader can learn
-  from and imagine building on, or a large industry system that's impressive to
-  read but hard to approach? Note the difference; don't discard either.
-- **Connection?** — does it touch anything in `context.md`? Note this as a helpful
-  aside — a connection to flag, **not** a filter. Something outside that context
-  can still be the best opening; don't down-rank it for that.
-
-A paper that opens a direction the reader could plausibly pursue is a **direction
-candidate** (feed it to "Directions for you" in presentation), not just a good
-read. The goal is awareness of openings, not a shortlist of projects to commit to.
-
-Also read the week *as a whole* — cluster papers into themes so you can speak to
-trends, not just individual papers.
-
-**Affiliations (endorsement signal).** For every curated paper, show *who's
-behind it* at a glance. This is a two-part job: the script does the deterministic
-extraction; **you interpret**.
-
-Run the helper to get the raw author/affiliation text:
-
-```bash
-# curated subset straight from the fetch output (skips peripheral tier)
-python3 <skill-dir>/scripts/fetch_arxiv.py --days 7 --curated-json \
-  | python3 <skill-dir>/scripts/affiliations.py --from-json --curated
-
-# or pass ids explicitly
-python3 <skill-dir>/scripts/affiliations.py 2607.13604 2607.13276 ...
-```
-
-It emits `{id: {"block": "<raw author/affiliation text>", "emails": [...],
-"email_domains": [...], "source": "html|pdf|none"}}` and prints the source +
-email domains per paper to stderr. It reads `https://arxiv.org/html/{id}` (ar5iv
-author block), falling back to the PDF author region via `pdftotext`. It does
-**no** name cleanup or classification — that is intentionally yours.
-
-Then **read each `block`** (with `email_domains` as a hint) and produce, for the
-digest:
-- the **distinct institution name(s)**, cleaned to a recognizable short form
-  (e.g. "ETH Zürich", "AWS", "MIT CSAIL") — the raw block is often messy
-  (author names run into institutions, city/country trailing);
-- an **academia / industry / both** tag — `.edu`/`.ac.*`/university → academia;
-  a company domain (`amazon.com`, `microsoft.com`, …) or company name →
-  industry.
-
-Why a script for the fetch but not the parse: the arXiv Atom API carries **no**
-affiliations, and OpenAlex has none for fresh preprints (indexed but un-enriched
-for days), so the text must come from the paper — but turning that text into a
-clean name is judgment, so it stays with the agent.
-
-- `--delay` (default 1.5s) spaces fetches to avoid arXiv **HTTP 429**; raise it
-  for large batches.
-- `source: "none"` / empty `block` means neither the HTML render nor the PDF
-  resolved — show the affiliation blank, never guess.
+**Affiliations.** For every curated paper, extract who is behind it with
+`scripts/affiliations.py` and clean the names and academia/industry tag
+yourself. Read [references/affiliations.md](references/affiliations.md) for the
+procedure.
 
 ### 5. Presentation
 
-Produce the output in this order:
+Produce, in order: (a) the **week in review** (research trends, most inspiring,
+directions for you, gaps and open threads; at most five bullets each), (b)
+**highlights** led by one "if you read one thing" pick, and (c) the full
+**digest** in tier order, with the catch-all tier terse. Read
+[references/presentation.md](references/presentation.md) for the content of
+each part and the digest JSON fields.
 
-**a. Week in review** (lead with this). A short synthesis for the reader, using
-`context.md` when present. **Cap each subsection at ≤5 bullets**; if a subsection
-is thin, collapse it rather than padding — the review should stay skimmable even
-on a busy week. Cover:
-- **Research trends** — the emerging themes/directions this week (e.g. "CXL
-  tiering picking up", "KV-cache offload converging on X"). Name the cluster and
-  cite the papers in it.
-- **Most inspiring / novel** — 2–5 papers with the freshest ideas or biggest
-  potential impact, each with a one-line *why it matters*.
-- **Directions for you** — the direction candidates from evaluation: openings the
-  reader should be aware of. For each, say why it's a foothold (entry point /
-  wide-open / tractable) and note any connection to `context.md` when available.
-  This is orientation — *openings to have on the radar*, not a shortlist of
-  projects to commit to. See the opportunity read in stage 4.
-- **Gaps & open problems** — what's conspicuously absent or unsolved this week.
-  Also carry forward **open threads**: a direction that appeared in a recent week
-  then went quiet is exactly the kind of opening worth flagging. Keep these as an
-  `open_threads` list in the digest JSON (below) so each week can read back the
-  last one and track whether a thread is heating up or cooling off.
+**Output files.** Write into `DIR`, named by the ISO week of the window end:
+`digest-YYYY-Www.{json,md,html}` and `digest-YYYY-Www-highlights.md`. Read the
+previous digest JSON in `DIR` for its `open_threads` first. If files for that
+week already exist, ask before overwriting.
 
-If the window is thin, say so briefly rather than manufacturing a trend.
-
-**b. Highlights.** Call out the top picks from evaluation at the top of the
-digest, before the full listing — title (linked), one-line why-it-matters. Lead
-with a single **"if you read one thing"** pick — the lowest-effort entry point for
-the reader — then the rest of the top set.
-
-**c. The digest.** The full curated listing, Core first. For each Ring-1/Ring-2
-paper keep: **title (linked to the abstract)**, authors, **affiliation(s) with an
-academia/industry tag** (the endorsement signal from the evaluation step), date,
-primary category, arXiv id, and a 1–2 sentence takeaway. Render Peripheral terse
-(title + one-liner; affiliation optional). If a section is empty after curation,
-say so briefly rather than padding it.
-
-**Output files.** Write the week's digest into `DIR` as
-`digest-YYYY-Www.{json,md,html}` (ISO week). Read the previous digest JSON in
-`DIR` for its `open_threads` before writing this week's:
-
-1. Assemble the curated content — rings/topics/papers with cleaned affiliations
-   and sectors, plus the week-in-review and highlights prose — into
-   **`digest-YYYY-Www.json`** following the schema in the header of
-   `scripts/render_html.py`. This JSON is the agent's judgment, captured as data.
-2. Render the HTML **deterministically** from it — never hand-write the HTML, so
-   the style is identical every week:
+1. Write the curated content as `DIR/digest-YYYY-Www.json`, following the
+   schema in the header of [`scripts/render_html.py`](scripts/render_html.py).
+2. Write `DIR/digest-YYYY-Www.md` directly.
+3. Render the HTML and highlights deterministically from the JSON; never
+   hand-write them:
 
    ```bash
-   python3 <skill-dir>/scripts/render_html.py DIR/digest-YYYY-Www.json --out-dir DIR
+   python3 $SKILL/scripts/render_html.py DIR/digest-YYYY-Www.json --out-dir DIR
+   python3 $SKILL/scripts/render_highlights.py DIR/digest-YYYY-Www.json --out-dir DIR
    ```
 
-   The CSS/layout is frozen inside `render_html.py`; to restyle *all* digests,
-   edit the `CSS` block there once and re-render. The Markdown digest can be
-   written directly (it carries no styling to drift).
+## Done when
 
-## Notes & tuning
-
-- To widen or narrow coverage, edit `CATEGORIES` and the `TOPICS` taxonomy at
-  the top of `scripts/fetch_arxiv.py`. Topics are matched in order; the first
-  match wins, so more storage-central topics are listed first. Tiers are
-  `core` / `adjacent` / `peripheral` (see `PRIORITY_ORDER` and
-  `SECTION_TITLES`).
-- arXiv's `submittedDate` sort returns the newest first; `--max-per-cat 200`
-  comfortably covers a 7-day window for these categories. If a run looks
-  truncated (the oldest paper shown is still inside the window), raise it.
-- Weekends/holidays post fewer papers; an empty or thin week is normal, not a
-  bug.
-- Style consistency across weeks comes from `scripts/render_html.py` (frozen
-  CSS) fed by `digest-YYYY-Www.json`. Keep HTML generation going through the
-  script, not by hand, or the look will drift.
+- The four output files exist in `DIR`, and the HTML and highlights were
+  rendered by the scripts from the JSON.
+- The JSON carries the fetch output's `window` and an `open_threads` list.
+- Truncation warnings, keyword misfires, and an unusually long gap were
+  reported to the user.

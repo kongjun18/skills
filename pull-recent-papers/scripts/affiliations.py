@@ -24,7 +24,7 @@ Usage:
     # or feed fetch_arxiv.py --json on stdin (reads every arxiv_id)
     python3 fetch_arxiv.py --days 7 --json | python3 affiliations.py --from-json
 
-    # curated subset only (skip peripheral tier)
+    # curated subset only (skip the catch-all skim tier)
     python3 fetch_arxiv.py --json | python3 affiliations.py --from-json --curated
 
 Output: JSON on stdout, keyed by id:
@@ -147,7 +147,7 @@ def read_ids(args) -> list[str]:
         data = json.load(sys.stdin)
         papers = data["papers"] if isinstance(data, dict) else data
         if args.curated:
-            papers = [p for p in papers if p.get("priority") != "peripheral"]
+            papers = [p for p in papers if not p.get("skim")]
         return [p["arxiv_id"] for p in papers]
     return args.ids
 
@@ -159,7 +159,7 @@ def main() -> int:
     ap.add_argument("--from-json", action="store_true",
                     help="read ids from fetch_arxiv.py --json on stdin")
     ap.add_argument("--curated", action="store_true",
-                    help="with --from-json, skip peripheral-tier papers")
+                    help="with --from-json, skip catch-all (skim) tier papers")
     ap.add_argument("--delay", type=float, default=1.5,
                     help="seconds between fetches to avoid HTTP 429 (default 1.5)")
     args = ap.parse_args()

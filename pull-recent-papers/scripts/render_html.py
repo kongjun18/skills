@@ -13,6 +13,8 @@ Input JSON (stdin or a path):
       "title": "arXiv Storage-Systems Digest",
       "subtitle": "Week of Jul 11 - Jul 18, 2026 - ...",
       "window_label": "Jul 11-Jul 18, 2026",
+      "window": {"start": "<ISO>", "end": "<ISO>"},  # from fetch output; NOT rendered.
+                                          # The next run starts at window.end.
       "stats": [{"n": "75", "label": "fetched"}, ...],
       "review": {                         # week-in-review; HTML inline allowed
         "intro": "<p>...</p>",
@@ -37,10 +39,12 @@ Input JSON (stdin or a path):
                "date": "2026-07-14", "arxiv_id": "2607.x",
                "primary_category": "cs.AR",                 # badge (top-left of card)
                "cats": "cs.AR, cs.AI",                      # full category list (footer)
-               "takeaway": "...", "lead": true}
+               "takeaway": "...", "lead": true,
+               "badge": "Your paper"}                        # optional short label
             ]}]}
       ],
-      "peripheral": {                     # skim-only tail
+      "peripheral": {                     # skim-only tail (the catch-all tier)
+        "title": "Peripheral (skim only)",  # optional; catch-all tier title
         "note": "58 in-category papers had no storage angle...",
         "items": [{"title": "...", "url": "...", "note": "not storage"}],
         "tail": "...and ~53 more (...)."
@@ -118,6 +122,8 @@ CSS = """
     background:var(--panel2); border:1px solid var(--line); border-radius:6px; padding:1px 7px; }
   .date { color:var(--mut); font-size:12px; }
   .lead-tag { margin-left:auto; color:var(--lead); font-size:12px; font-weight:600; }
+  .tag { color:var(--accent); font-size:12px; font-weight:600; border:1px solid var(--line);
+    border-radius:6px; padding:0 6px; }
   .card h3 { margin:2px 0 6px; font-size:16px; line-height:1.35; }
   .card h3 a { color:var(--ink); text-decoration:none; }
   .card h3 a:hover { color:var(--accent); text-decoration:underline; }
@@ -179,11 +185,12 @@ def render_affil(paper: dict) -> str:
 def render_card(paper: dict) -> str:
     lead = " lead" if paper.get("lead") else ""
     lead_tag = '<span class="lead-tag">★ highlight</span>' if paper.get("lead") else ""
+    badge = f'<span class="tag">{esc(paper["badge"])}</span>' if paper.get("badge") else ""
     return f"""      <article class="card{lead}">
         <div class="card-head">
           <span class="badge">{esc(paper.get('primary_category', ''))}</span>
           <span class="date">{esc(paper.get('date', ''))}</span>
-          {lead_tag}
+          {badge}{lead_tag}
         </div>
         <h3>{link(paper.get('url', ''), paper.get('title', ''))}</h3>
         <p class="authors">{esc(paper.get('authors', ''))}</p>
@@ -269,7 +276,7 @@ def render(d: dict) -> str:
     per = d.get("peripheral")
     if per:
         p.append('\n  <div class="peripheral">')
-        p.append('    <h2>Peripheral (skim only)</h2>')
+        p.append(f'    <h2>{esc(per.get("title", "Peripheral (skim only)"))}</h2>')
         if per.get("note"):
             p.append(f'    <p>{esc(per["note"])}</p>')
         p.append('    <ul>')
