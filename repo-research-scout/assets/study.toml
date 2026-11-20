@@ -1,0 +1,46 @@
+# Study configuration for repo-research-scout. Copy into the study directory
+# (for example reports/<date>-<slug>/scout/study.toml) and fill in.
+
+id = "example-study"                 # unique per study; keys selections and analyses
+targets = ["owner/repo"]             # repositories studied in full (census + metrics)
+peers = []                           # repositories searched only per cluster (generality test)
+window_months = 24                   # census covers items updated in the window, plus all open items
+# window_start = "2025-01-01"        # overrides window_months for a fixed, reproducible window
+# db_dir = ".repo-scout"             # local database directory (gitignore it); default is the central store
+
+# Path prefixes (repository-relative) that define components. Longest prefix wins.
+# Derive them from the target's directory layout before the first run.
+[components]
+# storage = ["src/storage/"]
+# index = ["src/index/", "python/index/"]
+
+# Labels that map an item to a component when no linked PR touches mapped files.
+[label_components]
+# "area/storage" = "storage"
+
+# Per-tier settings. Empty values mean the host agent's own choice for that tier:
+# t1 = cheapest capable model, low effort; t2 = mid model; t3 = strongest model.
+[tiers.t1]
+model = ""
+effort = ""
+[tiers.t2]
+model = ""
+effort = ""
+[tiers.t3]
+model = ""
+effort = ""
+
+[budget]
+t1_per_direction = 150   # T0 keeps this many top-scored items per direction for T1
+t2_per_direction = 25    # T2 reads at most this many escalated items per direction
+t1_body_chars = 600      # body characters shown to T1
+t2_max_chars = 12000     # thread characters shown to T2 (body, then maintainer comments, then others)
+t1_batch = 50
+t2_batch = 8
+half_life_days = 365     # recency decay in T0 scoring
+
+[[directions]]
+id = "example"
+title = "Short direction title"
+question = "The question this direction must answer."
+keywords = ["keyword one", "keyword two"]

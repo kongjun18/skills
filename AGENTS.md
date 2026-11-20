@@ -27,6 +27,7 @@ Research:
 - `systems-evaluation-planner`: systems-paper claim and evaluation planning (`evaluation_plan.yaml`).
 - `systems-paper-plotting`: auditable systems-paper figure production from the plan.
 - `system-research-scout`: evidence-bound survey of recent systems-conference papers into research ideas.
+- `repo-research-scout`: cached issue/PR census of a repository, tiered model analysis, and falsifiable research-opportunity cards.
 - `pull-recent-papers`: weekly arXiv digest and research radar.
 
 Learning:

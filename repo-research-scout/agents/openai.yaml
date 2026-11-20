@@ -1,0 +1,7 @@
+interface:
+  display_name: "Repo Research Scout"
+  short_description: "Mine a repository's issues and PRs for research opportunities"
+  default_prompt: "Use $repo-research-scout to set up a study for a repository I name, sync its issue/PR census into the cached database, run the tiered triage and analysis within the study's budget, and produce verified hypothesis cards and a snapshot for an exploration report."
+
+policy:
+  allow_implicit_invocation: true
