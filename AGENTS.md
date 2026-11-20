@@ -30,7 +30,7 @@ Research:
 
 Learning:
 
-- `tutorial`: self-contained HTML tutorials that teach a repository, concept, or research direction, with a structural checker.
+- `teachme`: self-contained HTML tutorials that teach a repository, concept, or research direction, with a structural checker.
 
 Papers and talks:
 

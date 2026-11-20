@@ -1,9 +1,9 @@
 ---
-name: tutorial
-description: Teach the user an unfamiliar repository, concept, or research direction by writing a self-contained HTML tutorial into the project's `tutorials/` directory, calibrated to the user's background, built around one running example, with diagrams, check-yourself questions, code walkthroughs with file:line citations, a glossary, and verified further reading. Triggers include "teach me", "write a tutorial", "help me understand this repo / codebase / concept / paper area / research direction", "onboarding guide", "explain X in depth", "I don't understand X", "make me a tutorial in HTML". For a short answer in chat, answer directly (high-signal-writing); for a survey of recent conference papers into research ideas, use system-research-scout; for a weekly arXiv digest, use pull-recent-papers; for measuring or benchmarking something and reporting results, use exploration-report.
+name: teachme
+description: Teach the user an unfamiliar repository, concept, or research direction by writing a self-contained HTML tutorial into the project's `tutorials/` directory, calibrated to the user's background, built around one running example, with diagrams, check-yourself questions, code walkthroughs with file:line citations, a glossary, and verified further reading. Invoked as /teachme. Triggers include "teach me", "write a tutorial", "help me understand this repo / codebase / concept / paper area / research direction", "onboarding guide", "explain X in depth", "I don't understand X", "make me a tutorial in HTML". For a short answer in chat, answer directly (high-signal-writing); for a survey of recent conference papers into research ideas, use system-research-scout; for a weekly arXiv digest, use pull-recent-papers; for measuring or benchmarking something and reporting results, use exploration-report.
 ---
 
-# Tutorial
+# Teach Me
 
 Write a tutorial that takes this learner from what they already know to a working mental model of the subject, and that is true to its sources. The output is one HTML file a person reads in a browser, not a chat answer.
 
