@@ -1,6 +1,8 @@
 # Profile
 
-Context for agents, not rules. Updated: YYYY-MM-DD.
+Context for agents, not rules.
+
+_Last updated: YYYY-MM-DD._
 
 ## Background
 

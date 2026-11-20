@@ -17,14 +17,14 @@ know, and what they can run. It is context, not a constraint.
 ## Location
 
 `${XDG_CONFIG_HOME:-~/.config}/agent-skills/user-profile/` is the fixed path
-every harness uses (`PROFILE_DIR` below). Make it a private git repository so
-changes have history:
+every harness uses (`PROFILE_DIR` below). It holds two plain files and is
+never put under version control, because it is personal:
 
 - `profile.md`: the profile. Short, free-form Markdown, about a page.
 - `signals.md`: append-only evidence that may change the profile.
 
 The profile lives outside the skills repository and holds only what is useful
-for the user's work. Leave out IDs, grades, contact details, and anyone else's
+for the user's work. Never copy it into a repository. Leave out IDs, grades, contact details, and anyone else's
 unpublished work.
 
 ## Reading
@@ -55,17 +55,16 @@ follow, a topic they call noise, a new resource.
 Run when the user asks, or suggest it when `signals.md` has about ten lines
 since the last update.
 
-1. Read `profile.md` and the signals added since its `Updated:` date.
+1. Read `profile.md` and the signals added since its `Last updated:` date.
 2. Propose a diff to `profile.md`: add, reword, or drop entries. Also flag
    entries no signal has touched in about six months and ask whether they still
    hold.
-3. Apply only what the user approves, set `Updated:` to today, and commit
-   `profile.md` and `signals.md` in the profile repository. Keep the signals as
-   history.
+3. Apply only what the user approves and set `Last updated:` to today. Keep
+   the signals; they are the profile's history.
 
 ## Setup
 
-If `PROFILE_DIR` does not exist, create it, run `git init` there, copy
+If `PROFILE_DIR` does not exist, create it, copy
 [assets/profile.md](assets/profile.md) into it, and add an empty `signals.md`.
 If the user already keeps a briefing about themselves elsewhere, such as a
 digest's context file, start from it instead of the template. Fill the gaps
