@@ -30,7 +30,9 @@ max_results = 600
 # If the file is missing, the user-profile skill's profile.md is used when it
 # exists; otherwise there is no context.
 # context_file = "context.md"
-# Short interest phrases. Used to flag connections, not to filter.
+# Short interest phrases, only for readers with no context file. When a reader
+# context exists, it is the source of interests and this list is ignored.
+# Used to flag connections, not to filter.
 interests = []
 # Names the reader publishes under, to recognize their own papers.
 author_names = []

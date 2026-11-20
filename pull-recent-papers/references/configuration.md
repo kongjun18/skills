@@ -13,7 +13,7 @@ them into prose.
 | Section | Customizes | Used by |
 |---|---|---|
 | `[digest]` | area: `title`, `field`, arXiv `categories`, `strict_categories`, `days`, `max_results` | script + agent |
-| `[reader]` | `context_file` (Markdown, relative to `$CONF`, default `context.md`), `interests`, `author_names` | script resolves the context path; agent reads it |
+| `[reader]` | `context_file` (Markdown, relative to `$CONF`, default `context.md`), `author_names`, and `interests` (only used when no reader context exists; see Reader context in SKILL.md) | script resolves the context path; agent reads it |
 | `[ranking]` | `preferences` for ordering papers within a topic | agent |
 | `[[tiers]]` | priority bands in display order; exactly one `catch_all` tier | script + agent |
 | `[[topics]]` | topics in match order, each with a `tier`, regex `patterns`, and optional `exclude` patterns that veto the topic | script |
@@ -44,7 +44,9 @@ Ask in one batch, skipping anything the user wants to keep:
 
 - **Area**: the field, and which arXiv categories to pull (suggest candidates
   if they name a field but not categories).
-- **Interests**: short phrases to flag connections for.
+- **Interests**: only if no reader context exists. Prefer offering to create
+  `$CONF/context.md` (Reader context in SKILL.md); use `[reader] interests`
+  only when the user wants a short list instead.
 - **Author names**: the names they publish under, to recognize their own
   papers.
 - **Priority**: tier bands and their order, topics to add, remove, or reorder,

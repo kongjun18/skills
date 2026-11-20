@@ -114,7 +114,10 @@ def show_config(path: Path, cfg: dict) -> None:
         print(f"context:    {ctx}")
     else:
         print(f"context:    (none; {own} and {USER_PROFILE} missing)")
-    print(f"interests:  {'; '.join(reader.get('interests', [])) or '(none)'}")
+    interests = '; '.join(reader.get('interests', [])) or '(none)'
+    if ctx and reader.get('interests'):
+        interests = f"(ignored: the reader context is the source of interests) {interests}"
+    print(f"interests:  {interests}")
     print(f"authors:    {'; '.join(reader.get('author_names', [])) or '(none)'}")
     prefs = cfg.get("ranking", {}).get("preferences", [])
     print(f"ranking:    {'; '.join(prefs) or '(none)'}")

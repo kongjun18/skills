@@ -51,7 +51,8 @@ uses `--config PATH`, else `$CONF/config.toml`, else the bundled
 [`assets/default-config.toml`](assets/default-config.toml) (a storage-systems
 taxonomy with no personal settings). Sections: `[digest]` (title, field,
 categories, `strict_categories`, window), `[reader]` (`context_file`,
-`interests`, `author_names`), `[ranking]` (within-topic preferences),
+`author_names`, and `interests` for readers without a context file),
+`[ranking]` (within-topic preferences),
 `[[tiers]]`, and `[[topics]]` (regex patterns, first match wins, unmatched
 papers fall into the one catch-all tier).
 
@@ -71,8 +72,8 @@ keyword misfires.
 If `$CONF/config.toml` does not exist, before fetching anything:
 
 1. Run `--show-config` and summarize the default for the user: field,
-   categories, tiers and their topics, that no interests or author names are
-   set, and which reader context (if any) was found.
+   categories, tiers and their topics, that no author names are set, and
+   which reader context (if any) was found.
 2. Ask whether to **use the default** or **customize it**, and wait for the
    answer.
 3. **Default:** copy it unchanged so later runs do not ask again:
@@ -93,7 +94,8 @@ script resolves it (`--show-config` prints the result) in this order:
    `$CONF/context.md`), if the file exists;
 2. else `${XDG_CONFIG_HOME:-~/.config}/agent-skills/user-profile/profile.md`,
    the user's personal profile kept by the separate `user-profile` skill, if it
-   exists (read it only; this skill does not need that skill installed);
+   exists (read it only: never write, commit, or track it; this skill does
+   not need that skill installed);
 3. else no context.
 
 When there is no context at all, offer once to create `$CONF/context.md`: ask a
@@ -102,9 +104,17 @@ few short questions following the sections of
 interests, current work, resources) and write the answers in that shape. If
 the user skips, proceed without context and do not ask again this session.
 
-Read the context, with `[reader] interests`, before ranking and evaluation.
+**One source of truth for interests.** When a reader context exists, it is the
+source of the reader's interests and `[reader] interests` is ignored; that list
+is only for readers with no context file. If both exist, tell the user once that
+the context file wins (`--show-config` flags it). Script-facing settings
+(categories, `strict_categories`, topics, `author_names`, ranking) stay in
+`config.toml`.
 
-**Context frames; it never filters.** Use the context and interests to order
+Read the context (or, without one, `[reader] interests`) before ranking and
+evaluation.
+
+**Context frames; it never filters.** Use the reader's interests to order
 papers within the config's tier and topic priority and to note connections and
 tractable openings. Never drop or demote a strong paper because it falls outside
 the reader's interests. Keep breadth so unfamiliar directions still appear, and
