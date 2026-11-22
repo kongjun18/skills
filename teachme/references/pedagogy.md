@@ -32,17 +32,31 @@ Read before writing. How to turn sources into lessons a learner can follow.
 
 Add a misconception callout where learners commonly go wrong: a plausible but wrong belief, and why it is wrong. Take them from the sources (FAQs, issue trackers, paper discussions) or from your learner reviewer; do not invent straw men.
 
+## The exam
+
+The exam is the tutorial's definition of done for the learner: a person who passes it has the model the goal needs. Write it before the outline (SKILL.md step 2), and teach so the learner can pass it.
+
+**What to ask.** Pick the abilities the goal needs, then write one question per ability:
+
+- Explain why: "Why does X need ... while Y does not?"
+- Predict: "What happens to ... if ...?"
+- Trace: "Follow this input through the system; what does each part do?"
+- Transfer or design: "Would this still work if ...?", "Where would you add ...?"
+- Critique: "A paper claims ...; what evidence would you ask for?"
+- For `research`: place a system or paper the tutorial did not cover on the landscape, and judge whether a stated gap is real and what a first experiment would be.
+
+Cover the core mental model and every focus point the user named. Ask each ability once; write as many questions as the goal needs and no more. Prefer questions whose wrong answers reveal a specific misconception.
+
+**Answers.** Each question has a model answer that gives the reasoning, and a pass criterion: the one to three points a passing answer must contain ("A passing answer says ... and ..."). The learner reviewer is graded against the criterion.
+
+**Fairness.** Every question is answerable from the tutorial plus the stated prerequisites, and none is answered by copying a sentence from it. If the model answer needs a fact the lessons do not teach, add it to a lesson or drop the question.
+
 ## Check-yourself questions
 
-A good question needs the idea applied, not a sentence recalled.
-
-- Prediction: "What happens if ...?", "Which component handles ... and why?"
-- Transfer: "Would this still work if ...?", "Where would you add ...?"
-- Contrast: "Why does X need ... while Y does not?"
-
-Avoid questions answered by copying a phrase from the lesson. Every answer gives the reasoning, not only the result, and every question is answerable from the tutorial plus the stated prerequisites.
+Each lesson ends with one: a smaller step toward an exam question, under the same rules — the idea applied, not a sentence recalled, and an answer that gives the reasoning.
 
 ## Depth
 
-- Match depth to the goal. Detail the goal does not need goes into a collapsed `details.aside` ("Going deeper") or Further reading.
+- The exam sets the depth. Detail no exam question needs goes into a collapsed `details.aside` ("Going deeper") inside the lesson it extends, or into Further reading.
+- One subject, one place. A paper, system, or idea is taught in the lesson its exam question needs; a deep dive on it goes in that lesson's aside, not in a second chapter.
 - Do not pad. A short tutorial that builds the right model beats a long one that covers everything.

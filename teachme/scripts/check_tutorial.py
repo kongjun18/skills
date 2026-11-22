@@ -21,11 +21,13 @@ Errors:
   placeholder  template placeholder left ({{...}}, TODO, TBD, lorem ipsum)
                outside code (<code>) and, for {{...}} only, Mermaid blocks
   section      required section id missing (objectives, prerequisites,
-               big-picture, summary, glossary, further-reading; walkthrough
-               for repo tutorials); no section.lesson; a lesson without
+               big-picture, exam, summary, glossary, further-reading;
+               walkthrough for repo tutorials; research-directions for
+               research tutorials); no section.lesson; a lesson without
                exactly one <h2>
-  check        a lesson without a details.check, or a check without a
-               summary question or a non-empty .answer
+  check        a lesson or the exam without a details.check, a check without
+               a summary question or a non-empty .answer, or an exam answer
+               without a non-empty p.pass (the pass criterion)
   anchor       in-page #link with no matching id
   link         relative or file:// link that does not resolve on disk
   url          (--check-urls) http(s) link that does not load
@@ -38,7 +40,8 @@ Errors:
                glossary entry <dt id="g-x">
 
 Warnings:
-  lessons      fewer than 3 or more than 7 lessons
+  objectives   the number of objectives differs from the number of exam
+               questions (the skill pairs them one to one)
   term-unused  glossary entry with no <dfn> and no link to it
   citations    repo tutorial with no code citations at all
 
@@ -57,7 +60,8 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
-REQUIRED = ["objectives", "prerequisites", "big-picture", "summary", "glossary", "further-reading"]
+REQUIRED = ["objectives", "prerequisites", "big-picture", "exam", "summary", "glossary", "further-reading"]
+PER_KIND = {"repo": ["walkthrough"], "research": ["research-directions"]}
 KINDS = {"repo", "concept", "research"}
 TODO_RE = re.compile(r"\bTODO\b|\bTBD\b|lorem ipsum", re.I)
 BRACE_RE = re.compile(r"\{\{[^}]*\}\}")
@@ -162,30 +166,38 @@ def check(path: Path, repo: Path | None, check_urls: bool) -> tuple[list[str], l
     check_placeholders(raw, errors)
 
     ids = {n.attrs["id"] for n in nodes if "id" in n.attrs}
-    for sid in REQUIRED + (["walkthrough"] if kind == "repo" else []):
+    for sid in REQUIRED + PER_KIND.get(kind, []):
         if sid not in ids:
             errors.append(f"section: required section id {sid!r} missing")
 
     lessons = [n for n in main.iter() if n.tag == "section" and "lesson" in n.classes()]
     if not lessons:
         errors.append("section: no <section class=\"lesson\">")
-    elif not 3 <= len(lessons) <= 7:
-        warnings.append(f"lessons: {len(lessons)} lessons; the skill expects 3-7 unless the user agreed otherwise")
-    for lesson in lessons:
-        name = lesson.attrs.get("id", "(no id)")
-        h2s = [n for n in lesson.iter() if n.tag == "h2"]
-        if len(h2s) != 1:
-            errors.append(f"section: lesson {name!r} has {len(h2s)} <h2>, expected 1")
-        checks = [n for n in lesson.iter() if n.tag == "details" and "check" in n.classes()]
+    exam = next((n for n in main.iter() if n.tag == "section" and n.attrs.get("id") == "exam"), None)
+    for sec in lessons + ([exam] if exam is not None else []):
+        is_exam = sec is exam
+        name = "exam" if is_exam else f"lesson {sec.attrs.get('id', '(no id)')!r}"
+        if not is_exam:
+            h2s = [n for n in sec.iter() if n.tag == "h2"]
+            if len(h2s) != 1:
+                errors.append(f"section: {name} has {len(h2s)} <h2>, expected 1")
+        checks = [n for n in sec.iter() if n.tag == "details" and "check" in n.classes()]
         if not checks:
-            errors.append(f"check: lesson {name!r} has no details.check")
+            errors.append(f"check: {name} has no details.check")
         for i, c in enumerate(checks, 1):
             summary = next((n for n in c.iter() if n.tag == "summary"), None)
             answer = next((n for n in c.iter() if "answer" in n.classes()), None)
             if summary is None or not summary.all_text():
-                errors.append(f"check: lesson {name!r} check {i} has no question in <summary>")
+                errors.append(f"check: {name} check {i} has no question in <summary>")
             if answer is None or not answer.all_text():
-                errors.append(f"check: lesson {name!r} check {i} has no non-empty .answer")
+                errors.append(f"check: {name} check {i} has no non-empty .answer")
+            elif is_exam and not any(n.tag == "p" and "pass" in n.classes() and n.all_text() for n in answer.iter()):
+                errors.append(f"check: exam question {i} has no non-empty p.pass criterion")
+        if is_exam:
+            objectives = next((n for n in nodes if n.attrs.get("id") == "objectives"), None)
+            n_obj = sum(1 for n in objectives.iter() if n.tag == "li") if objectives is not None else 0
+            if n_obj != len(checks):
+                warnings.append(f"objectives: {n_obj} objectives but {len(checks)} exam questions")
 
     hrefs = [n.attrs["href"] for n in main.iter() if n.tag == "a" and n.attrs.get("href")]
     urls = set()

@@ -38,13 +38,43 @@ Use a code-intelligence index when the harness has one; otherwise search and rea
 
 ## Research
 
-A research-direction tutorial teaches the learner to read and judge work in the area, not to list papers.
+A research-direction tutorial is a light research primer: it teaches the learner to read and judge work in the area and leaves them with candidate research questions, not a list of papers.
 
-**Sources:** a recent survey if one exists, the founding paper(s), and the papers that changed the direction. Find candidates by search, then open each one; verify title, authors, venue, and year from the paper or its publisher page, never from memory. Record which claims come from which paper.
+**Sources, in three lanes:**
+
+- **Papers:** a recent survey if one exists, the founding paper(s), the papers that changed the direction, and the latest work. Find candidates by search, then open each one; verify title, authors, venue, and year from the paper or its publisher page, never from memory. Record which claims come from which paper.
+- **Systems:** the documentation of the systems people actually use, for what each promises and what it leaves out.
+- **Field signals:** what practitioners report as broken, missing, or confusing, from issue trackers ([below](#field-signals)).
 
 **Skeleton:**
 
 1. Big picture: the problem, why it is hard, and why it matters now.
-2. Lessons: the shared vocabulary and evaluation setup (workloads, metrics, baselines); the main families of approaches, each with its key idea, a representative paper, and the tradeoff it makes; a comparison table across families.
-3. Open problems: what the papers themselves name as unsolved or contested, with sources. Separate these from your own synthesis, which you label as such.
+2. Lessons, in roughly this order, each kept only if an exam question needs it:
+   - Why: the workload or need, and why the obvious approach falls short.
+   - What: the semantics or guarantees the approaches must provide, with the shared vocabulary.
+   - How: the main families of mechanisms, each with its key idea, a representative paper or system, and the tradeoff it makes.
+   - Landscape: a design-space table (a few axes that separate the families, one row per system or paper) and a timeline of how the direction evolved, which together form the road map.
+   - Evaluation: the workloads, metrics, and baselines the area uses, and what they miss.
+3. Gaps and research directions (`id="research-directions"`), labelled as your synthesis:
+   - Gaps: an empty or contested cell of the design-space table, a problem the papers name as open, or a field signal the published work does not address. Each gap cites its evidence (paper, documentation, or issue link) and says why it is still open.
+   - Plan list: one item per promising direction — the research question, the gaps it builds on, and two or three concrete first steps (a measurement, a prototype, a paper to read closely). Keep it to the directions the evidence supports.
 4. Reading path: an ordered list in Further reading — what to read first, and what each paper adds.
+
+## Field signals
+
+A light pass over issue trackers that shows where practice hurts, used for every `research` tutorial with open-source systems, and in other kinds for misconception callouts. It reads titles, and bodies only when a title is promising; it is not a census.
+
+1. Pick the three to five repositories of the systems the tutorial covers.
+2. Search titles with the area's key terms, most-discussed first:
+
+   ```bash
+   gh search issues "<term>" --repo <owner/repo> --match title --sort comments --limit 30 \
+     --json title,url,state,commentsCount,createdAt \
+     --jq '.[] | "\(.state)\t\(.commentsCount)\t\(.createdAt[:10])\t\(.title)\t\(.url)"'
+   ```
+
+   Run `gh search prs` the same way for work in progress. Without `gh`, use the tracker's web search restricted to titles.
+3. Group the hits into themes (for example: performance, correctness, missing feature, confusing semantics). Open the body of the few issues that anchor a theme; quote only what you read.
+4. In the tutorial, report each theme with its issue links and the date of the search, and state the limits: the repositories searched, the terms used, and that titles undercount.
+
+For a full census of one repository's issues and pull requests, with topic metrics over time, hand off to `repo-research-scout` and say so in Further reading.

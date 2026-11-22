@@ -1,6 +1,6 @@
 # Reviewer Briefs
 
-Two fresh subagents, dispatched in parallel after the check script passes. Give each the fields in angle brackets — the learner gets the copy without answers (SKILL.md step 6), the fact checker the real tutorial; do not give them your notes or the conversation, so they read the tutorial as it stands. Both are read-only: they report, the author fixes.
+Fresh subagents, dispatched in parallel after the check script passes: the fact checker and the learner always, the researcher for research tutorials. Give each the fields in angle brackets — the learner gets the copy without answers (SKILL.md step 7), the others the real tutorial; do not give them your notes or the conversation, so they read the tutorial as it stands. All are read-only: they report, the author fixes.
 
 ## Fact checker
 
@@ -44,6 +44,38 @@ Report, most blocking first:
    answer, and whether the tutorial gave you enough to reach it.
 4. Leaps: places where a step in the reasoning was skipped.
 5. Padding: passages you could skip without losing anything for your goal.
-Then: can you now do the stated objectives? Answer per objective, yes / partly / no,
-with one line of why.
+
+Then take the final exam (section "exam") without looking back at the
+lessons. For each question, write your answer, then name the section that
+taught you what you needed, or say what was missing.
+```
+
+After the learner reports, grade each exam answer against the question's pass criterion (`p.pass` in the real tutorial): pass / partial / fail. Every non-pass is a defect to fix in the lessons the question depends on.
+
+## Researcher
+
+For research tutorials only.
+
+```
+You are a skeptical researcher in <area> checking the "Gaps and research
+directions" section of a tutorial. Do not edit it.
+
+Tutorial: <path>
+Date of the tutorial's sources: <YYYY-MM-DD>
+
+For each gap:
+1. Open its cited evidence (paper, documentation, issue). Does it show the
+   gap, or only something near it?
+2. Search for work that already closes it (paper search engines, arXiv,
+   the systems' release notes and recent pull requests). Cite what you find.
+3. Verdict: grounded / already addressed (cite) / weak evidence / speculative.
+
+For each direction in the plan list: is the research question answerable,
+does it follow from the gaps it names, and are the first steps concrete
+enough to start next week? Name a missing gap or direction only if the
+tutorial's own evidence points to it.
+
+Report one line per problem, most serious first:
+  <gap or direction> | problem | evidence (URL + what it says) | suggested fix
+End with: gaps checked, directions checked, problems found.
 ```

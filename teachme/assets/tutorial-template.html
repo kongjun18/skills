@@ -61,6 +61,9 @@ details.check > summary::before { content: "Check yourself: "; color: var(--acce
 details.check[open] > summary { margin-bottom: .5rem; }
 details.check .answer { border-top: 1px dashed var(--rule); padding-top: .5rem; }
 details.check .answer::before { content: "Answer"; display: block; font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ok); }
+details.check p.pass { font-size: .92rem; color: var(--ok); }
+#exam details.check > summary::before { content: "Q: "; }
+p.synthesis { font-size: .85rem; color: var(--muted); border: 1px dashed var(--rule); border-radius: 6px; padding: .4rem .8rem; }
 figure { margin: 1.5rem 0; text-align: center; }
 figure svg { max-width: 100%; height: auto; }
 figcaption { font-size: .88rem; color: var(--muted); margin-top: .5rem; text-align: left; }
@@ -89,6 +92,7 @@ ol.reading li { margin: .6rem 0; }
 <section id="objectives">
   <h2>What you will learn</h2>
   <ul>
+    <!-- one objective per exam question, in the same order -->
     <li>{{Objective phrased as an ability: "Explain why...", "Trace a ... through ...", "Decide when to ..."}}</li>
   </ul>
 </section>
@@ -132,6 +136,32 @@ flowchart LR
   <!-- for goals like "modify X": where to start; delete otherwise -->
   <h3>Where to change things</h3>
   <p>{{The files, functions, and tests to start from for the learner's goal, each with a citation.}}</p>
+</section>
+
+<!-- research tutorials only -->
+<section id="research-directions">
+  <h2>Gaps and research directions</h2>
+  <p class="synthesis">{{This section is our synthesis from the evidence cited in it, as of YYYY-MM-DD; it is not a claim made by the sources.}}</p>
+  <h3>Gaps</h3>
+  <ul>
+    <li>{{Gap: what is missing or contested, the evidence (paper, documentation, or issue links), and why it is still open.}}</li>
+  </ul>
+  <h3>Directions</h3>
+  <ol>
+    <li>{{Research question}} — builds on {{gaps}}. First steps: {{a measurement, a prototype, a paper to read closely}}.</li>
+  </ol>
+</section>
+
+<section id="exam">
+  <h2>Final exam</h2>
+  <p>{{One line: if you can answer these, you have the model this tutorial set out to build. Try each before opening the answer.}}</p>
+  <details class="check">
+    <summary>{{A question that tests one objective by applying the whole model.}}</summary>
+    <div class="answer">
+      <p>{{Model answer with the reasoning.}}</p>
+      <p class="pass">{{A passing answer says ... and ...}}</p>
+    </div>
+  </details>
 </section>
 
 <section id="summary">
